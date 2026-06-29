@@ -10,13 +10,19 @@ from extractor import process_pdf
 # ============================================
 
 st.set_page_config(
-    page_title="CCSJV Drawing Register",
+    page_title="PDF FILE EXTRACTION",
     page_icon="📄",
     layout="wide"
 )
 
-st.title("📄 PDF FILES EXTRACTOR")
-st.caption("Mozambique LNG Project")
+col1, col2 = st.columns([1, 8])
+
+with col1:
+    st.image("logo.jpg", width=120)
+
+with col2:
+    st.title("PDF FILES EXTRACTOR")
+    st.caption("Mozambique LNG Project")
 
 st.markdown("---")
 
@@ -24,7 +30,7 @@ st.markdown("---")
 # Sidebar
 # ============================================
 
-st.sidebar.title("📂 CCSJV Drawing Register")
+st.sidebar.title("📂 Extracted PDF Files")
 st.sidebar.markdown("---")
 st.sidebar.write("### Uploaded PDFs")
 
@@ -64,10 +70,20 @@ if uploaded_files:
 
     st.success(f"{len(uploaded_files)} PDF(s) selected.")
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([3,1])
 
-    extract = col1.button("Extract Drawing Register")
-    clear = col2.button("🗑 Clear")
+    with col1:
+        extract = st.button(
+        "Extract Drawing Register",
+        use_container_width=True,
+        type="primary"
+    )
+
+    with col2:
+        clear = st.button(
+        "🗑 Clear",
+        use_container_width=True
+    )
 
     if clear:
      st.rerun()
@@ -113,131 +129,7 @@ if uploaded_files:
 
         status.success("✅ Extraction Completed Successfully")
 
-        # ============================================
-        # Statistics
-        # ============================================
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric("PDF Files", len(uploaded_files))
-        col2.metric("Sheets", len(final_df))
-        col3.metric(
-            "Drawing Numbers",
-            final_df["Drawing No"].astype(bool).sum()
-        )
-
-        st.markdown("---")
-
-        # ============================================
-        # Extraction Quality
-        # ============================================
-
-        total_sheets = len(final_df)
-
-        required_fields = [
-            "Drawing No",
-            "Line No",
-            "PID No"
-        ]
-
-        complete_rows = (
-            final_df[required_fields]
-            .replace("", pd.NA)
-            .dropna()
-            .shape[0]
-        )
-
-        success_rate = (
-            complete_rows / total_sheets * 100
-            if total_sheets else 0
-        )
-
-        duplicate_drawings = (
-            final_df["Drawing No"]
-            .loc[final_df["Drawing No"] != ""]
-            .duplicated()
-            .sum()
-        )
-
-        st.subheader("📊 Extraction Quality")
-
-        c1, c2, c3, c4 = st.columns(4)
-
-        c1.metric(
-            "Success Rate",
-            f"{success_rate:.1f}%"
-        )
-
-        c2.metric(
-            "Missing Drawing No",
-            final_df["Drawing No"].eq("").sum()
-        )
-
-        c3.metric(
-            "Missing Line No",
-            final_df["Line No"].eq("").sum()
-        )
-
-        c4.metric(
-            "Duplicate Drawings",
-            duplicate_drawings
-        )
-
-        st.markdown("---")
-
-        # ============================================
-        # Missing Information
-        # ============================================
-
-        st.subheader("⚠ Missing Information")
-
-        missing_summary = pd.DataFrame({
-
-            "Field": [
-                "Drawing No",
-                "CCSJV DWG",
-                "Line No",
-                "PID No",
-                "Revision",
-                "NPS(IN)",
-                "LINE CLASS"
-            ],
-
-            "Missing": [
-                final_df["Drawing No"].eq("").sum(),
-                final_df["CCSJV DWG"].eq("").sum(),
-                final_df["Line No"].eq("").sum(),
-                final_df["PID No"].eq("").sum(),
-                final_df["Revision"].eq("").sum(),
-                final_df["NPS(IN)"].eq("").sum(),
-                final_df["LINE CLASS"].eq("").sum()
-            ]
-        })
-
-        st.dataframe(
-            missing_summary,
-            use_container_width=True
-        )
-
-        duplicates = final_df[
-            final_df.duplicated(
-                "Drawing No",
-                keep=False
-            ) &
-            (final_df["Drawing No"] != "")
-        ]
-
-        if not duplicates.empty:
-
-            st.warning("Duplicate Drawing Numbers Found")
-
-            st.dataframe(
-                duplicates,
-                use_container_width=True
-            )
-
-        st.markdown("---")
-
+       
         # ============================================
         # Preview Table
         # ============================================
@@ -253,7 +145,7 @@ if uploaded_files:
         # Download Excel
         # ============================================
 
-        excel_name = "CCSJV_Drawing_Register.xlsx"
+        excel_name = "Extracted Data.xlsx"
 
         final_df.to_excel(
             excel_name,
@@ -281,4 +173,14 @@ if uploaded_files:
             csv,
             file_name="CCSJV_Drawing_Register.csv",
             mime="text/csv"
+        )
+        st.markdown("---")
+
+        st.caption(
+        """
+        **CCSJV Drawing Register Extractor**
+        Version 1.0.0
+        Developed for Mozambique LNG Project
+        © 2026 Daewoo E&C 
+        """
         )
