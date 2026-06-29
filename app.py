@@ -2,119 +2,65 @@ import streamlit as st
 import pandas as pd
 import tempfile
 import os
-import fitz
-from PIL import Image
 
 from extractor import process_pdf
 
-def preview_pdf(uploaded_pdf, page_no=0):
-
-    uploaded_pdf.seek(0)
-
-    doc = fitz.open(
-        stream=uploaded_pdf.read(),
-        filetype="pdf"
-    )
-
-    page = doc.load_page(page_no)
-
-    pix = page.get_pixmap(matrix=fitz.Matrix(2,2))
-
-    image = Image.frombytes(
-        "RGB",
-        [pix.width, pix.height],
-        pix.samples
-    )
-
-    doc.close()
-
-    uploaded_pdf.seek(0)
-
-    return image
 # ============================================
 # Page Configuration
 # ============================================
+
 st.set_page_config(
     page_title="CCSJV Drawing Register",
     page_icon="📄",
     layout="wide"
 )
 
-# ============================================
-# Header
-# ============================================
 st.title("📄 CCSJV Drawing Register Extractor")
 st.caption("Mozambique LNG Project")
 
 st.markdown("---")
 
+
 # ============================================
 # Sidebar
 # ============================================
+
 st.sidebar.title("📂 CCSJV Drawing Register")
-
 st.sidebar.markdown("---")
-
 st.sidebar.write("### Uploaded PDFs")
 
 
 # ============================================
-# File Upload
+# Upload PDFs
 # ============================================
-# ============================================
-# File Upload
-# ============================================
+
 uploaded_files = st.file_uploader(
     "Select PDF Files",
     type="pdf",
     accept_multiple_files=True
 )
 
+
 # ============================================
-# Sidebar - Uploaded PDFs
+# Sidebar File List
 # ============================================
+
+
 if uploaded_files:
 
     st.sidebar.header("📂 Uploaded PDFs")
 
-    pdf_names = [pdf.name for pdf in uploaded_files]
-
-    selected_name = st.sidebar.selectbox(
-        "Preview PDF",
-        pdf_names
-    )
-
-    selected_pdf = next(
-        pdf for pdf in uploaded_files
-        if pdf.name == selected_name
-    )
+    for pdf in uploaded_files:
+        st.sidebar.write(f"📄 {pdf.name}")
 
     st.sidebar.markdown("---")
 
-    for pdf in uploaded_files:
-        if pdf.name == selected_name:
-            st.sidebar.success(f"📄 {pdf.name}")
-        else:
-            st.sidebar.write(f"📄 {pdf.name}")
-            
-# ============================================
-# PDF Preview
-# ============================================
-if uploaded_files:
 
-    st.subheader("📄 PDF Preview")
-
-    image = preview_pdf(selected_pdf)
-
-    st.image(
-        image,
-        caption=f"{selected_name} - Page 1",
-        use_container_width=True
-    )
 
 # ============================================
-# Process
+# Process PDFs
 # ============================================
+
 if uploaded_files:
 
     st.success(f"{len(uploaded_files)} PDF(s) selected.")
@@ -133,7 +79,10 @@ if uploaded_files:
 
             uploaded_file.seek(0)
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            with tempfile.NamedTemporaryFile(
+                delete=False,
+                suffix=".pdf"
+            ) as tmp:
 
                 tmp.write(uploaded_file.read())
 
@@ -155,7 +104,7 @@ if uploaded_files:
             ignore_index=True
         )
 
-        status.success("Extraction Completed Successfully")
+        status.success("✅ Extraction Completed Successfully")
 
         # ============================================
         # Statistics
@@ -164,9 +113,7 @@ if uploaded_files:
         col1, col2, col3 = st.columns(3)
 
         col1.metric("PDF Files", len(uploaded_files))
-
         col2.metric("Sheets", len(final_df))
-
         col3.metric(
             "Drawing Numbers",
             final_df["Drawing No"].astype(bool).sum()
@@ -175,10 +122,120 @@ if uploaded_files:
         st.markdown("---")
 
         # ============================================
-        # Preview
+        # Extraction Quality
         # ============================================
 
-        st.subheader("Preview")
+        total_sheets = len(final_df)
+
+        required_fields = [
+            "Drawing No",
+            "Line No",
+            "PID No"
+        ]
+
+        complete_rows = (
+            final_df[required_fields]
+            .replace("", pd.NA)
+            .dropna()
+            .shape[0]
+        )
+
+        success_rate = (
+            complete_rows / total_sheets * 100
+            if total_sheets else 0
+        )
+
+        duplicate_drawings = (
+            final_df["Drawing No"]
+            .loc[final_df["Drawing No"] != ""]
+            .duplicated()
+            .sum()
+        )
+
+        st.subheader("📊 Extraction Quality")
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        c1.metric(
+            "Success Rate",
+            f"{success_rate:.1f}%"
+        )
+
+        c2.metric(
+            "Missing Drawing No",
+            final_df["Drawing No"].eq("").sum()
+        )
+
+        c3.metric(
+            "Missing Line No",
+            final_df["Line No"].eq("").sum()
+        )
+
+        c4.metric(
+            "Duplicate Drawings",
+            duplicate_drawings
+        )
+
+        st.markdown("---")
+
+        # ============================================
+        # Missing Information
+        # ============================================
+
+        st.subheader("⚠ Missing Information")
+
+        missing_summary = pd.DataFrame({
+
+            "Field": [
+                "Drawing No",
+                "CCSJV DWG",
+                "Line No",
+                "PID No",
+                "Revision",
+                "NPS(IN)",
+                "LINE CLASS"
+            ],
+
+            "Missing": [
+                final_df["Drawing No"].eq("").sum(),
+                final_df["CCSJV DWG"].eq("").sum(),
+                final_df["Line No"].eq("").sum(),
+                final_df["PID No"].eq("").sum(),
+                final_df["Revision"].eq("").sum(),
+                final_df["NPS(IN)"].eq("").sum(),
+                final_df["LINE CLASS"].eq("").sum()
+            ]
+        })
+
+        st.dataframe(
+            missing_summary,
+            use_container_width=True
+        )
+
+        duplicates = final_df[
+            final_df.duplicated(
+                "Drawing No",
+                keep=False
+            ) &
+            (final_df["Drawing No"] != "")
+        ]
+
+        if not duplicates.empty:
+
+            st.warning("Duplicate Drawing Numbers Found")
+
+            st.dataframe(
+                duplicates,
+                use_container_width=True
+            )
+
+        st.markdown("---")
+
+        # ============================================
+        # Preview Table
+        # ============================================
+
+        st.subheader("📋 Extracted Drawing Register")
 
         st.dataframe(
             final_df,
