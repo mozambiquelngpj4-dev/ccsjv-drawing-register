@@ -15,11 +15,10 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📄 CCSJV Drawing Register Extractor")
+st.title("📄 PDF FILES EXTRACTOR")
 st.caption("Mozambique LNG Project")
 
 st.markdown("---")
-
 
 # ============================================
 # Sidebar
@@ -65,7 +64,15 @@ if uploaded_files:
 
     st.success(f"{len(uploaded_files)} PDF(s) selected.")
 
-    if st.button("🚀 Extract Drawing Register"):
+    col1, col2 = st.columns(2)
+
+    extract = col1.button("Extract Drawing Register")
+    clear = col2.button("🗑 Clear")
+
+    if clear:
+     st.rerun()
+
+    if extract:
 
         dfs = []
 
