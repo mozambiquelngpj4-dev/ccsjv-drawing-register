@@ -111,12 +111,19 @@ if uploaded_files:
 
                 tmp_path = tmp.name
 
-            df = process_pdf(
-                tmp_path,
-                original_name=uploaded_file.name
-            )
+            try:
+                df = process_pdf(
+                    tmp_path,
+                    original_name=uploaded_file.name
+                )
 
-            dfs.append(df)
+                print(type(df))
+
+                dfs.append(df)
+
+            except Exception as e:
+                st.exception(e)
+                raise
 
             os.remove(tmp_path)
 
