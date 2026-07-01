@@ -89,7 +89,7 @@ def process_pdf(pdf_path, original_name=None):
             # ==========================================
 
                 m = re.search(
-                    r'\d{3}-(?:\d+(?:/\d+)?(?:\.\d+)?)"{0,2}-[A-Z]{1,2}-\d{4}[A-Z]?-?[A-Z0-9]+-[A-Z]',
+                    r'\d{3}-(?:\d+(?:/\d+)?(?:\.\d+)?)"{0,2}-[A-Z]{1,3}-\d{4}[A-Z]?-?[A-Z0-9]+-[A-Z]',
                     text,
                     re.IGNORECASE
                 )
@@ -138,8 +138,8 @@ def process_pdf(pdf_path, original_name=None):
                         line_no
                     )
 
-                if m:
-                    nps = m.group(1)
+                    if m:
+                        nps = m.group(1)
                 
         # ==================================================
         # Revision
@@ -174,7 +174,6 @@ def process_pdf(pdf_path, original_name=None):
 
         if table_pattern:
 
-            # Only use table NPS if it wasn't already extracted
             if not nps:
                 nps = table_pattern.group(1)
 
