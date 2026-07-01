@@ -77,44 +77,50 @@ def process_pdf(pdf_path, original_name=None):
                     r"MZ-\d{3}-CCX-PI-ISO-[A-Z0-9-]+",
                     text,
                     re.IGNORECASE
-            )
+                )
 
                 if m:
                     ccsjv_dwg = m.group()
+        
+        
           
             # ==========================================
             # Line Number
             # ==========================================
 
                 m = re.search(
-                    r'\d{3}-.*?-[A-Z]{2}-\d{4}-[A-Z0-9]+-[A-Z]',
-                    text
+                    r'\d{3}-(?:\d+(?:/\d+)?(?:\.\d+)?)"{0,2}-[A-Z]{1,2}-\d{4}[A-Z]?-?[A-Z0-9]+-[A-Z]',
+                    text,
+                    re.IGNORECASE
                 )
 
                 if m:
                     line_no = m.group()
-
+                    
             # ==========================================
-            # Line Number
+            # Line Class (from Line Number)
             # ==========================================
 
-                m = re.search(
-                    r'\d{3}-[\d\.]+"{1,2}-[A-Z]{2}-\d{4}-[A-Z0-9]+-[A-Z]',
-                    text
-                )
+                line_class = ""
+
+                if line_no:
+                    m = re.search(
+                        r'-(\d{2}[A-Z0-9]{6})-[A-Z]$',
+                        line_no
+                    )
 
                 if m:
-                    line_no = m.group()
+                    line_class = m.group(1)
 
             # ==========================================
             # PID Number
             # ==========================================
 
                 m = re.search(
-                    r"MZ-\d{3}-CCX-PR-PID-[A-Z0-9-]+",
+                    r"MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}",
                     text,
                     re.IGNORECASE
-)
+                )
 
                 if m:
                     pid_no = m.group()
@@ -128,12 +134,12 @@ def process_pdf(pdf_path, original_name=None):
                 if line_no:
 
                     m = re.search(
-                        r'-(\d+(?:\.\d+)?)"{1,2}',
+                        r'^\d{3}-(\d+(?:/\d+)?(?:\.\d+)?)"',
                         line_no
                     )
 
-                    if m:
-                        nps = m.group(1)
+                if m:
+                    nps = m.group(1)
                 
         # ==================================================
         # Revision
@@ -152,25 +158,26 @@ def process_pdf(pdf_path, original_name=None):
         # ==================================================
 
         table_pattern = re.search(
-            r'(\d+(?:\.\d+)?)\s+'          # NPS
-            r'([A-Z0-9]+)\s+'              # Line Class
-            r'([A-Z]+)\s+'                 # Insulation Type
-            r'(\d+(?:\.\d+)?)\s+'          # Insulation Thickness
-            r'(\d+(?:\.\d+)?)\s+'          # Operating Temp
-            r'(\d+(?:\.\d+)?)\s+'          # Design Temp
-            r'(\d+(?:\.\d+)?)\s+'          # Design Pressure
-            r'([A-Z]+)\s+'                 # Test Type
-            r'(\d+(?:\.\d+)?)',            # Test Pressure
-            text
+            r'(\d+(?:\.\d+)?)\s+'                 # NPS
+            r'([A-Z0-9]+)\s+'                     # Line Class
+            r'([A-Z]+)\s+'                        # Insulation Type
+            r'(\d+(?:\.\d+)?)\s+'                 # Insulation Thickness
+            r'(\d+(?:\.\d+)?)\s+'                 # Operating Temp
+            r'(\d+(?:\.\d+)?)\s+'                 # Design Temp
+            r'(\d+(?:\.\d+)?)\s+'                 # Design Pressure
+            r'([A-Za-z\. ]+?)\s+'                 # Test Type
+            r'(\d+(?:\.\d+)?)?\s*'                # Test Pressure (optional)
+            r'(\d+)',                             # Paint System
+            text,
+            re.IGNORECASE
         )
 
         if table_pattern:
 
-            # Keep NPS from Line Number
+            # Only use table NPS if it wasn't already extracted
             if not nps:
-                 nps = table_pattern.group(1)
+                nps = table_pattern.group(1)
 
-            # Keep Line Class from Line Number
             if not line_class:
                 line_class = table_pattern.group(2)
 
@@ -179,8 +186,10 @@ def process_pdf(pdf_path, original_name=None):
             oper_temp = table_pattern.group(5)
             des_temp = table_pattern.group(6)
             des_press = table_pattern.group(7)
-            test_type = table_pattern.group(8)
-            test_press = table_pattern.group(9)
+
+            test_type = table_pattern.group(8).strip()
+            test_press = table_pattern.group(9) or ""
+            pnt_sys = table_pattern.group(10)
 
         # ==================================================
         # Save Record

@@ -21,8 +21,8 @@ with col1:
     st.image("logo.jpg", width=120)
 
 with col2:
-    st.title("PDF FILES EXTRACTOR")
-    st.caption("Mozambique LNG Project")
+    st.title("ISO DWG DETAILS EXTRACTOR")
+    st.caption("Daewoo E&C - Mozambique LNG PJ")
 
 st.markdown("---")
 
