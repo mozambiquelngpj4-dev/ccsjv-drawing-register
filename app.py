@@ -184,10 +184,11 @@ if uploaded_files:
         st.markdown("---")
 
         st.caption(
-        """
-        **CCSJV Drawing Register Extractor**
-        Version 1.0.0
-        Developed for Mozambique LNG Project
-        © 2026 Daewoo E&C 
-        """
+            """
+            **ISO DWG DETAILS EXTRACTOR v1.0.0**
+
+            Daewoo E&C – Mozambique LNG Project
+
+            © 2026 All Rights Reserved
+            """
         )
