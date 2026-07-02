@@ -10,15 +10,15 @@ from extractor import process_pdf
 # ============================================
 
 st.set_page_config(
-    page_title="PDF FILE EXTRACTION",
-    page_icon="📄",
+    page_title="ISO DWG DETAILS EXTRACTION",
+    page_icon="🗂️",
     layout="wide"
 )
 
 st.markdown("""
 <style>
 .header{
-    
+    background:  
     padding:20px;
     border-radius:12px;
     margin-bottom:15px;
@@ -29,7 +29,7 @@ st.markdown("""
     font-weight:bold;
 }
 .subtitle{
-    color:black;
+    color:green;
     font-size:25px;
 }
 
@@ -71,16 +71,26 @@ st.sidebar.write("### Uploaded PDFs")
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
+st.info(
+    """
+    ℹ️ **Supported PDF Types**
+
+    ✔ Standard exported PDF drawings – Fully supported
+
+    ⚠ Editable/Vector PDF drawings – Some engineering details may not be extracted completely.
+    """
+)
+
 st.subheader("📂 UPLOAD ISO DRAWINGS")
+
 
 st.info(
     "**Upload** one or more ISO PDF drawings.\n"
-    "Click **Extract Drawing Register** to generate the report.\n\n"
-    "**Note: The PDF Files should not be editable**"
+    "Click **Extract Drawing Register** to generate the report."
 )
 
 uploaded_files = st.file_uploader(
-    "Select PDF Files",
+    "**Select PDF Files**",
     type="pdf",
     accept_multiple_files=True,
     key=f"pdf_uploader_{st.session_state.uploader_key}"
