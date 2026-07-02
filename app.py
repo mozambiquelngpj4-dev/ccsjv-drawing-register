@@ -24,12 +24,12 @@ st.markdown("""
     margin-bottom:15px;
 }
 .title{
-    color:#6E7F80;
-    font-size:70px;
+    color:#566D7E;
+    font-size:65px;
     font-weight:bold;
 }
 .subtitle{
-    color:#657383;
+    color:#566D7E;
     font-size:25px;
 }
 
@@ -44,7 +44,7 @@ st.markdown("""
 col1,col2 =st.columns([1,6])
 
 with col1:
-    st.image("23.jpg", width=180)
+    st.image("23.jpg", width=250)
 
 with col2:
     st.markdown("""
@@ -76,14 +76,13 @@ st.sidebar.markdown("---")
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
-st.warning(
+st.info(
     """
-    **Notice**
+    ℹ️ **Supported PDF Types**
 
-    Some editable/vector PDF drawings may not extract all engineering properties correctly
-    (e.g. INSUL TYPE, OPER.TEMP, TEST TYPE, PNT SYS).
+    ✔ Standard exported PDF drawings – Fully supported
 
-    For best results, use standard exported PDF drawings.
+    ⚠ Editable/Vector PDF drawings – Some engineering details may not be extracted completely.
     """
 )
 
@@ -109,7 +108,6 @@ if uploaded_files:
 
     for pdf in uploaded_files:
         st.sidebar.write(f"📄 {pdf.name}")
-
     st.sidebar.markdown("---")
 
 
@@ -330,11 +328,11 @@ if uploaded_files:
 
         st.caption(
             """
-            **ISO DWG DETAILS EXTRACTOR v1.0.0**
+            **ISO DWG DETAILS EXTRACTOR v1.1.4**
             
-            Developed by: ejbo
+            Developed by: Piping Department
 
-            Daewoo E&C – Mozambique LNG Project
+            Developed for: DAEWOO E & C
 
             © 2026 All Rights Reserved
             """

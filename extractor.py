@@ -195,8 +195,8 @@ def process_pdf(pdf_path, original_name=None):
         # ==================================================
         drawing_register.append({
 
-            "PDF": file,
-            "Sheet": page_no + 1,
+            "PDF Files": file,
+            "Sheet No": page_no + 1,
             "Drawing No": ccsjv_dwg,
             "CCSJV DWG": drawing_no,
             "Line No": line_no,
