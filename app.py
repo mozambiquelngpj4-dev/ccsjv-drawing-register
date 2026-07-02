@@ -15,6 +15,9 @@ st.set_page_config(
     layout="wide"
 )
 
+if "show_table" not in st.session_state:
+    st.session_state.show_table = False
+
 st.markdown("""
 <style>
 .header{
@@ -124,20 +127,26 @@ if uploaded_files:
     # Dashboard Metrics
     # ============================================
 
-    col1, col2 = st.columns([3,1])
+    button1, button2, button3, button4 = st.columns([3,1,1,1])
 
-    with col1:
+    with button1:
         extract = st.button(
-        "**Extract Drawing Register**",
-        use_container_width=True,
-        type="primary"
-    )
+            "Extract Drawing Register",
+            use_container_width=True,
+            type="primary"
+        )
 
-    with col2:
+    with button2:
         clear = st.button(
-        "**🗑 Clear**",
-        use_container_width=True
-    )
+            "🗑 Clear",
+            use_container_width=True
+        )
+
+    with button3:
+        excel_placeholder = st.empty()
+
+    with button4:
+        csv_placeholder = st.empty()
 
     if clear:
         st.session_state.uploader_key += 1
@@ -279,13 +288,6 @@ if uploaded_files:
         # ============================================
         # Preview Table
         # ============================================
-        
-        title_col, excel_col, csv_col = st.columns([5, 1.3, 1.3])
-
-        with title_col:
-            st.subheader("📋 Extracted Drawing Register")
-
-        # Prepare download files
         excel_name = "Extracted Data.xlsx"
 
         final_df.to_excel(
@@ -293,36 +295,47 @@ if uploaded_files:
             index=False,
             engine="openpyxl"
         )
-
+        
+        # Create CSV
         csv = final_df.to_csv(index=False)
 
-        with excel_col:
-            with open(excel_name, "rb") as f:
-                st.download_button(
-                "Download Excel",
+        st.subheader("📋 Extracted Drawing Register")
+
+        with open(excel_name, "rb") as f:
+            excel_placeholder.download_button(
+                "📥 Excel",
                 data=f,
                 file_name=excel_name,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
-                )
-
-        with csv_col:
-            st.download_button(
-                "Download CSV",
-                data=csv,
-                file_name="CCSJV_Drawing_Register.csv",
-                mime="text/csv",
-                use_container_width=True
             )
 
+        csv_placeholder.download_button(
+            "📥 CSV",
+            data=csv,
+            file_name="CCSJV_Drawing_Register.csv",
+            mime="text/csv",
+            use_container_width=True
+            )
+            
+        with st.expander("👁 View Table Preview", expanded=False):
+            st.dataframe(
+            final_df,
+            use_container_width=True,
+            hide_index=True
+            )
+
+        
         # ============================================
         # Preview Table
         # ============================================
 
-        st.dataframe(
-            final_df,
-            use_container_width=True
-        )
+        if st.session_state.show_table:
+            st.dataframe(
+                final_df,
+                use_container_width=True,
+                hide_index=True
+            )
 
         st.markdown("---")
 
