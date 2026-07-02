@@ -33,13 +33,18 @@ st.markdown("""
     font-size:25px;
 }
 
+.button{
+    color:#657383;
+    font-size:25px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 col1,col2 =st.columns([1,6])
 
 with col1:
-    st.image("logo.jpg", width=180)
+    st.image("23.jpg", width=180)
 
 with col2:
     st.markdown("""
@@ -59,7 +64,7 @@ st.markdown("---")
 # Sidebar
 # ============================================
 
-st.sidebar.title("EXTRACTED PDF FILES")
+st.sidebar.title("**EXTRACTED PDF FILES**")
 st.sidebar.markdown("---")
 #st.sidebar.write("### UPLOADED PDFs")
 
@@ -100,7 +105,7 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
 
-    st.sidebar.header("UPLOADED PDFs")
+    st.sidebar.header("**UPLOADED PDFs**")
 
     for pdf in uploaded_files:
         st.sidebar.write(f"📄 {pdf.name}")
@@ -125,14 +130,14 @@ if uploaded_files:
 
     with col1:
         extract = st.button(
-        "Extract Drawing Register",
+        "**Extract Drawing Register**",
         use_container_width=True,
         type="primary"
     )
 
     with col2:
         clear = st.button(
-        "🗑 Clear",
+        "**🗑 Clear**",
         use_container_width=True
     )
 
