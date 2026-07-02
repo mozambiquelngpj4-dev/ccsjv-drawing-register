@@ -24,7 +24,7 @@ st.markdown("""
     margin-bottom:15px;
 }
 .title{
-    color:black;
+    color:green;
     font-size:70px;
     font-weight:bold;
 }
@@ -71,23 +71,18 @@ st.sidebar.write("### Uploaded PDFs")
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
-st.info(
+st.warning(
     """
-    ℹ️ **Supported PDF Types**
+    **Notice**
 
-    ✔ Standard exported PDF drawings – Fully supported
+    Some editable/vector PDF drawings may not extract all engineering properties correctly
+    (e.g. INSUL TYPE, OPER.TEMP, TEST TYPE, PNT SYS).
 
-    ⚠ Editable/Vector PDF drawings – Some engineering details may not be extracted completely.
+    For best results, use standard exported PDF drawings.
     """
 )
 
 st.subheader("📂 UPLOAD ISO DRAWINGS")
-
-
-st.info(
-    "**Upload** one or more ISO PDF drawings.\n"
-    "Click **Extract Drawing Register** to generate the report."
-)
 
 uploaded_files = st.file_uploader(
     "**Select PDF Files**",
@@ -125,25 +120,6 @@ if uploaded_files:
     # ============================================
     # Dashboard Metrics
     # ============================================
-
-    c1, c2, c3 = st.columns(3)
-
-    c1.metric(
-        "📄 PDF Selected",
-        len(uploaded_files)
-    )
-
-    c2.metric(
-        "📌 Status",
-        "Ready"
-    )
-
-    c3.metric(
-        "📊 Output",
-        "Excel / CSV"
-    )
-
-    st.markdown("")
 
     col1, col2 = st.columns([3,1])
 
