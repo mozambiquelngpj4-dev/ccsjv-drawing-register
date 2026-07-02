@@ -18,27 +18,28 @@ st.set_page_config(
 st.markdown("""
 <style>
 .header{
-    background:#0B4F8C;
+    
     padding:20px;
     border-radius:12px;
     margin-bottom:15px;
 }
 .title{
-    color:white;
-    font-size:34px;
+    color:black;
+    font-size:70px;
     font-weight:bold;
 }
 .subtitle{
-    color:#E8EEF7;
-    font-size:15px;
+    color:black;
+    font-size:25px;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
 col1,col2 =st.columns([1,6])
 
 with col1:
-    st.image("logo.jpg", width=100)
+    st.image("logo.jpg", width=180)
 
 with col2:
     st.markdown("""
@@ -47,7 +48,7 @@ with col2:
             ISO DWG DETAILS EXTRACTOR
         </div>
         <div class="subtitle">
-            PDF FILES
+            PDF FILES - Details - Extract
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -70,11 +71,12 @@ st.sidebar.write("### Uploaded PDFs")
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
-st.subheader("📂 Upload ISO Drawings")
+st.subheader("📂 UPLOAD ISO DRAWINGS")
 
 st.info(
-    "Upload one or more ISO PDF drawings.\n"
-    "Click **Extract Drawing Register** to generate the report."
+    "**Upload** one or more ISO PDF drawings.\n"
+    "Click **Extract Drawing Register** to generate the report.\n\n"
+    "**Note: The PDF Files should not be editable**"
 )
 
 uploaded_files = st.file_uploader(
@@ -83,6 +85,8 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True,
     key=f"pdf_uploader_{st.session_state.uploader_key}"
 )
+
+
 
 # ============================================
 # Sidebar File List
@@ -269,26 +273,30 @@ if uploaded_files:
             ignore_index=True
         )
 
+        # Format NPS column
+        if "NPS" in final_df.columns:
+            final_df["NPS"] = (
+            final_df["NPS"]
+            .astype(str)
+            .str.strip()
+            .replace("nan", "")
+            .apply(lambda x: f'{x}"' if x else "")
+            )
+
         progress.empty()
 
         status.success("✅ Extraction Completed Successfully!")
-
       
         # ============================================
         # Preview Table
         # ============================================
+        
+        title_col, excel_col, csv_col = st.columns([5, 1.3, 1.3])
 
-        st.subheader("📋 Extracted Drawing Register")
+        with title_col:
+            st.subheader("📋 Extracted Drawing Register")
 
-        st.dataframe(
-            final_df,
-            use_container_width=True
-        )
-
-        # ============================================
-        # Download Excel
-        # ============================================
-
+        # Prepare download files
         excel_name = "Extracted Data.xlsx"
 
         final_df.to_excel(
@@ -297,32 +305,43 @@ if uploaded_files:
             engine="openpyxl"
         )
 
-        with open(excel_name, "rb") as f:
+        csv = final_df.to_csv(index=False)
 
-            st.download_button(
-                "📥 Download Excel",
-                f,
+        with excel_col:
+            with open(excel_name, "rb") as f:
+                st.download_button(
+                "Download Excel",
+                data=f,
                 file_name=excel_name,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+                )
+
+        with csv_col:
+            st.download_button(
+                "Download CSV",
+                data=csv,
+                file_name="CCSJV_Drawing_Register.csv",
+                mime="text/csv",
+                use_container_width=True
             )
 
         # ============================================
-        # Download CSV
+        # Preview Table
         # ============================================
 
-        csv = final_df.to_csv(index=False)
-
-        st.download_button(
-            "📄 Download CSV",
-            csv,
-            file_name="CCSJV_Drawing_Register.csv",
-            mime="text/csv"
+        st.dataframe(
+            final_df,
+            use_container_width=True
         )
+
         st.markdown("---")
 
         st.caption(
             """
             **ISO DWG DETAILS EXTRACTOR v1.0.0**
+            
+            Developed by: ejbo
 
             Daewoo E&C – Mozambique LNG Project
 
