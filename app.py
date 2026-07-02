@@ -24,7 +24,7 @@ st.markdown("""
     margin-bottom:15px;
 }
 .title{
-    color:green;
+    color:gray;
     font-size:70px;
     font-weight:bold;
 }
@@ -59,9 +59,9 @@ st.markdown("---")
 # Sidebar
 # ============================================
 
-st.sidebar.title("📂 Extracted PDF Files")
+st.sidebar.title("EXTRACTED PDF FILES")
 st.sidebar.markdown("---")
-st.sidebar.write("### Uploaded PDFs")
+#st.sidebar.write("### UPLOADED PDFs")
 
 
 # ============================================
@@ -100,7 +100,7 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
 
-    st.sidebar.header("📂 Uploaded PDFs")
+    st.sidebar.header("UPLOADED PDFs")
 
     for pdf in uploaded_files:
         st.sidebar.write(f"📄 {pdf.name}")
