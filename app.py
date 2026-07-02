@@ -24,12 +24,12 @@ st.markdown("""
     margin-bottom:15px;
 }
 .title{
-    color:gray;
+    color:#6E7F80;
     font-size:70px;
     font-weight:bold;
 }
 .subtitle{
-    color:green;
+    color:#657383;
     font-size:25px;
 }
 
@@ -82,7 +82,7 @@ st.warning(
     """
 )
 
-st.subheader("📂 UPLOAD ISO DRAWINGS")
+st.subheader("📄 UPLOAD ISO DRAWINGS")
 
 uploaded_files = st.file_uploader(
     "**Select PDF Files**",
