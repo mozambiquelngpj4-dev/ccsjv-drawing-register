@@ -152,13 +152,13 @@ def process_pdf(pdf_path, original_name=None):
             # ==========================================
 
                 m = re.search(
-                    r"MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}",
+                    r'(MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}|[A-Z]+\d*-\d{3}-\d{3}/\d{3})',
                     text,
                     re.IGNORECASE
                 )
 
                 if m:
-                    pid_no = m.group()
+                    pid_no = m.group(1)
 
             # ==========================================
             # NPS (from Line Number)
