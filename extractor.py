@@ -3,6 +3,39 @@ import os
 import re
 import pandas as pd
 
+def normalize_ocr(line):
+    # Fix minus spacing
+    line = re.sub(r'-\s+', '', line)
+
+    # Join digits/letters split by spaces
+    line = re.sub(r'(?<=\w)\s+(?=\w)', '', line)
+
+    # Fix broken decimals
+    line = re.sub(r'(\d)\s*\.\s*(\d)', r'\1.\2', line)
+
+    # Remove extra spaces
+    line = re.sub(r'\s+', ' ', line).strip()
+
+    return line
+
+
+def normalize_pdf_line(line):
+    line = re.sub(r'(\d)\s*\.\s*(\d)', r'\1.\2', line)
+
+    line = re.sub(
+        r'-\s*((?:\d\s*)+)\.\s*((?:\d\s*)+)',
+        lambda m: '-' + re.sub(r'\s+', '', m.group(1)) + '.' + re.sub(r'\s+', '', m.group(2)),
+        line
+    )
+
+    line = re.sub(r'(?<=\d)\s(?=\d)', '', line)
+
+    line = re.sub(r'\s+', ' ', line).strip()
+
+    return line
+
+
+
 def process_pdf(pdf_path, original_name=None):
 
     drawing_register = []
@@ -71,6 +104,8 @@ def process_pdf(pdf_path, original_name=None):
         # Other Fields
         # ----------------------------
         for line in lines:
+            
+                line = normalize_pdf_line(line)  
 
             # CCSJV Drawing Number
                 m = re.search(
@@ -162,7 +197,7 @@ def process_pdf(pdf_path, original_name=None):
             r'([A-Z0-9]+)\s+'                     # Line Class
             r'([A-Z]+)\s+'                        # Insulation Type
             r'(\d+(?:\.\d+)?)\s+'                 # Insulation Thickness
-            r'(\d+(?:\.\d+)?)\s+'                 # Operating Temp
+            r'(-?\d+(?:\.\d+)?)\s+'                 # Operating Temp
             r'(\d+(?:\.\d+)?)\s+'                 # Design Temp
             r'(\d+(?:\.\d+)?)\s+'                 # Design Pressure
             r'([A-Za-z\. ]+?)\s+'                 # Test Type
@@ -195,8 +230,8 @@ def process_pdf(pdf_path, original_name=None):
         # ==================================================
         drawing_register.append({
 
-            "PDF Files": file,
-            "Sheet No": page_no + 1,
+            "PDF": file,
+            "Sheet": page_no + 1,
             "Drawing No": ccsjv_dwg,
             "CCSJV DWG": drawing_no,
             "Line No": line_no,
