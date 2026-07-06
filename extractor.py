@@ -191,7 +191,16 @@ def process_pdf(pdf_path, original_name=None):
         # ==================================================
         # Process Data Table
         # ==================================================
+        table_text = text
 
+        table_text = re.sub(
+            r'(?<=[A-Z0-9]) (?=[A-Z0-9])',
+            '',
+            table_text
+        )
+
+        print(table_text) 
+        
         table_pattern = re.search(
             r'(\d+(?:\.\d+)?)\s+'                 # NPS
             r'([A-Z0-9]+)\s+'                     # Line Class
@@ -230,10 +239,10 @@ def process_pdf(pdf_path, original_name=None):
         # ==================================================
         drawing_register.append({
 
-            "PDF": file,
-            "Sheet": page_no + 1,
+            "ISO DWG": file,
+            "Sheet No": page_no + 1,
             "Drawing No": ccsjv_dwg,
-            "CCSJV DWG": drawing_no,
+            "CCSJV DWG No": drawing_no,
             "Line No": line_no,
             "PID No": pid_no,
             "Revision": revision,
@@ -259,7 +268,7 @@ def process_pdf(pdf_path, original_name=None):
 
     columns_to_fill = [
     "Drawing No",
-    "CCSJV DWG",
+    "CCSJV DWG No",
     "Line No",
     "PID No",
     "Revision",

@@ -11,7 +11,7 @@ from extractor import process_pdf
 
 st.set_page_config(
     page_title="ISO DWG DETAILS EXTRACTION",
-    page_icon="🗂️",
+    page_icon="🌏",
     layout="wide"
 )
 
@@ -131,14 +131,14 @@ if uploaded_files:
 
     with button1:
         extract = st.button(
-            "Extract Drawing Register",
+            "📄 Extract DWG Details",
             use_container_width=True,
             type="primary"
         )
 
     with button2:
         clear = st.button(
-            "🗑 Clear",
+            "🗑️ CLEAR UP FILES",
             use_container_width=True
         )
 
@@ -165,12 +165,12 @@ if uploaded_files:
 
             status.markdown(f"""
             <div style="
-            background:linear-gradient(135deg,#0B4F8C,#1565C0);
+            background:#74baeb;
             padding:30px;
             border-radius:15px;
             box-shadow:0px 4px 12px rgba(0,0,0,0.25);
             text-align:center;
-            color:white;
+            color:#111212;
             margin-bottom:10px;
             ">
 
@@ -189,7 +189,7 @@ if uploaded_files:
             <div style="
             font-size:18px;
             margin-top:15px;
-            color:#E3F2FD;
+            color:#111212;
             ">
             📄 <b>{uploaded_file.name}</b>
             </div>
@@ -205,7 +205,7 @@ if uploaded_files:
             font-size:22px;
             font-weight:bold;
             margin-top:10px;
-            color:#FFD54F;
+            color:#111212;
             ">
             {percent}% Complete
             </div>
@@ -222,7 +222,7 @@ if uploaded_files:
             <div style="
             width:{percent}%;
             height:18px;
-            background:#4CAF50;
+            background:#f03e79;
             transition:width .4s;
             ">
             </div>
@@ -232,7 +232,7 @@ if uploaded_files:
             <div style="
             margin-top:20px;
             font-size:15px;
-            color:#E3F2FD;
+            color:#111212;
             ">
             Please wait while the ISO drawings are being analyzed...
             </div>
@@ -251,9 +251,11 @@ if uploaded_files:
                 tmp_path = tmp.name
 
             # Process PDF
-            df = process_pdf(
+            original_name = os.path.splitext(uploaded_file.name)[0]
+
+            df = process_pdf(       
                 tmp_path,
-                original_name=uploaded_file.name
+                original_name=original_name
             )
 
             dfs.append(df)
@@ -284,6 +286,8 @@ if uploaded_files:
         progress.empty()
 
         status.success("✅ Extraction Completed Successfully!")
+       
+          
       
         # ============================================
         # Preview Table
@@ -303,7 +307,7 @@ if uploaded_files:
 
         with open(excel_name, "rb") as f:
             excel_placeholder.download_button(
-                "📥 Excel",
+                "📥 Download Excel",
                 data=f,
                 file_name=excel_name,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -311,14 +315,14 @@ if uploaded_files:
             )
 
         csv_placeholder.download_button(
-            "📥 CSV",
+            "📥 Download CSV",
             data=csv,
             file_name="CCSJV_Drawing_Register.csv",
             mime="text/csv",
             use_container_width=True
             )
             
-        with st.expander("👁 View Table Preview", expanded=False):
+        with st.expander("👁 Table Preview", expanded=False):
             st.dataframe(
             final_df,
             use_container_width=True,
@@ -345,8 +349,8 @@ if uploaded_files:
             
             Developed by: Piping Department
 
-            Developed for: DAEWOO E & C
+            Developed for: Piping Department
 
-            © 2026 All Rights Reserved
+            ©️ 2026 All Rights Reserved
             """
         )
