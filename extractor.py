@@ -54,7 +54,11 @@ def process_pdf(pdf_path, original_name=None):
 
         page = doc.load_page(page_no)
         text = page.get_text("text")
+        normalized_lines = [normalize_ocr(line) for line in text.splitlines()]
 
+        # Join back into one string
+        normalized_text = "\n".join(normalized_lines)
+        
         lines = [line.strip() for line in text.splitlines() if line.strip()]
        
         print("\n==========================")
@@ -124,7 +128,7 @@ def process_pdf(pdf_path, original_name=None):
             # ==========================================
 
                 m = re.search(
-                    r'\d{3}-(?:\d+(?:/\d+)?(?:\.\d+)?)"{0,2}-[A-Z]{1,3}-\d{4}[A-Z]?-?[A-Z0-9]+-[A-Z]',
+                     r'\d{3}-(?:\d+(?:/\d+)?(?:\.\d+)?)"{0,2}-[A-Z]{1,3}-\d{4}[A-Z]?-?[A-Z0-9]+-[A-Z0-9]+',
                     text,
                     re.IGNORECASE
                 )
@@ -140,7 +144,7 @@ def process_pdf(pdf_path, original_name=None):
 
                 if line_no:
                     m = re.search(
-                        r'-(\d{2}[A-Z0-9]{6})-[A-Z]$',
+                        r'-([A-Z0-9]+)-[A-Z0-9]+$',
                         line_no
                     )
 
@@ -152,7 +156,7 @@ def process_pdf(pdf_path, original_name=None):
             # ==========================================
 
                 m = re.search(
-                    r'(MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}|[A-Z]+\d*-\d{3}-\d{3}/\d{3})',
+                    r'(MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}|[A-Z]+\d*-\d{3}-\d{3}/\d{3}|\d{3}-\d{5}(?:-\d+)+)',
                     text,
                     re.IGNORECASE
                 )
@@ -191,19 +195,10 @@ def process_pdf(pdf_path, original_name=None):
         # ==================================================
         # Process Data Table
         # ==================================================
-        table_text = text
 
-        table_text = re.sub(
-            r'(?<=[A-Z0-9]) (?=[A-Z0-9])',
-            '',
-            table_text
-        )
-
-        print(table_text) 
-        
         table_pattern = re.search(
-            r'(\d+(?:\.\d+)?)\s+'                 # NPS
-            r'([A-Z0-9]+)\s+'                     # Line Class
+            #r'(\d+(?:\.\d+)?)\s+'                 # NPS
+            #r'([A-Z0-9]+)\s+'                     # Line Class
             r'([A-Z]+)\s+'                        # Insulation Type
             r'(\d+(?:\.\d+)?)\s+'                 # Insulation Thickness
             r'(-?\d+(?:\.\d+)?)\s+'                 # Operating Temp
@@ -211,28 +206,24 @@ def process_pdf(pdf_path, original_name=None):
             r'(\d+(?:\.\d+)?)\s+'                 # Design Pressure
             r'([A-Za-z\. ]+?)\s+'                 # Test Type
             r'(\d+(?:\.\d+)?)?\s*'                # Test Pressure (optional)
-            r'(\d+)',                             # Paint System
-            text,
+            r'([A-Z0-9]+)',                             # Paint System
+            normalized_text,
             re.IGNORECASE
         )
 
         if table_pattern:
 
-            if not nps:
-                nps = table_pattern.group(1)
+           
 
-            if not line_class:
-                line_class = table_pattern.group(2)
+            insul_type = table_pattern.group(1)
+            insul_thk = table_pattern.group(2)
+            oper_temp = table_pattern.group(3)
+            des_temp = table_pattern.group(4)
+            des_press = table_pattern.group(5)
 
-            insul_type = table_pattern.group(3)
-            insul_thk = table_pattern.group(4)
-            oper_temp = table_pattern.group(5)
-            des_temp = table_pattern.group(6)
-            des_press = table_pattern.group(7)
-
-            test_type = table_pattern.group(8).strip()
-            test_press = table_pattern.group(9) or ""
-            pnt_sys = table_pattern.group(10)
+            test_type = table_pattern.group(6).strip()
+            test_press = table_pattern.group(7) or ""
+            pnt_sys = table_pattern.group(8)
 
         # ==================================================
         # Save Record

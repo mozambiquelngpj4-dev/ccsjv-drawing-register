@@ -165,7 +165,7 @@ if uploaded_files:
 
             status.markdown(f"""
             <div style="
-            background:#74baeb;
+            #background:#74baeb;
             padding:30px;
             border-radius:15px;
             box-shadow:0px 4px 12px rgba(0,0,0,0.25);
@@ -222,7 +222,7 @@ if uploaded_files:
             <div style="
             width:{percent}%;
             height:18px;
-            background:#f03e79;
+            background:#7febc4;
             transition:width .4s;
             ">
             </div>
