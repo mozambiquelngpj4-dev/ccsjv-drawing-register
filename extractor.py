@@ -19,12 +19,32 @@ def normalize_ocr(line):
     return line
 
 
+
+def normalize_ocr(line):
+
+    # Fix minus spacing
+    line = re.sub(r'-\s+', '-', line)
+
+    # Fix broken decimals
+    line = re.sub(r'(\d)\s*\.\s*(\d)', r'\1.\2', line)
+
+    # Remove extra spaces
+    line = re.sub(r'\s+', ' ', line).strip()
+
+    return line
+
+
+
 def normalize_pdf_line(line):
+
     line = re.sub(r'(\d)\s*\.\s*(\d)', r'\1.\2', line)
 
     line = re.sub(
         r'-\s*((?:\d\s*)+)\.\s*((?:\d\s*)+)',
-        lambda m: '-' + re.sub(r'\s+', '', m.group(1)) + '.' + re.sub(r'\s+', '', m.group(2)),
+        lambda m: '-' +
+        re.sub(r'\s+', '', m.group(1)) +
+        '.' +
+        re.sub(r'\s+', '', m.group(2)),
         line
     )
 
@@ -36,42 +56,61 @@ def normalize_pdf_line(line):
 
 
 
+
 def process_pdf(pdf_path, original_name=None):
 
     drawing_register = []
+
 
     if original_name:
         file = original_name
     else:
         file = os.path.basename(pdf_path)
 
+
+
     doc = fitz.open(pdf_path)
 
-    # ======================================================
-    # Process every page
-    # ======================================================
+
+
     for page_no in range(doc.page_count):
 
         page = doc.load_page(page_no)
-        text = page.get_text("text")
-        normalized_lines = [normalize_ocr(line) for line in text.splitlines()]
 
-        # Join back into one string
+        text = page.get_text("text")
+
+
+        normalized_lines = [
+            normalize_ocr(line)
+            for line in text.splitlines()
+        ]
+
+
         normalized_text = "\n".join(normalized_lines)
-        
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
-       
+
+
+        lines = [
+            normalize_pdf_line(line)
+            for line in text.splitlines()
+            if line.strip()
+        ]
+
+
+
         print("\n==========================")
         print(f"PDF : {file}")
-        print(f"Page: {page_no+1}")
+        print(f"PAGE: {page_no+1}")
         print("==========================")
 
-        for line in lines:
-            print(line)
+        for l in lines:
+            print(l)
 
-        # --------------------------------------------------
-        # Initialize variables
-        # --------------------------------------------------
+
+
+        # =================================================
+        # INITIAL VALUES
+        # =================================================
+
         drawing_no = ""
         ccsjv_dwg = ""
         line_no = ""
@@ -80,206 +119,292 @@ def process_pdf(pdf_path, original_name=None):
 
         nps = ""
         line_class = ""
+
         insul_type = ""
         insul_thk = ""
+
         oper_temp = ""
         des_temp = ""
         des_press = ""
+
         test_type = ""
         test_press = ""
+
         pnt_sys = ""
 
-        # ---------------------------------------
-        # Drawing Number (from PDF filename)
-        # Example:
-        # 033-AV-0026_512_0.pdf
-        # -> 033-AV-0026/512
-        # ---------------------------------------
+
+
+        # =================================================
+        # DRAWING NUMBER FROM FILE NAME
+        # =================================================
 
         filename = os.path.splitext(file)[0]
 
-        # Remove the trailing "_0", "_1", etc.
-        filename = re.sub(r"_\d+$", "", filename)
+        filename = re.sub(
+            r"_\d+$",
+            "",
+            filename
+        )
 
-        # Replace the remaining "_" with "/"
-        drawing_no = filename.replace("_", "/")
+        drawing_no = filename.replace("_","/")
 
-        # ----------------------------
-        # Other Fields
-        # ----------------------------
+
+
+        # =================================================
+        # EXTRACT HEADER INFORMATION
+        # =================================================
+
         for line in lines:
-            
-                line = normalize_pdf_line(line)  
 
-            # CCSJV Drawing Number
-                m = re.search(
-                    r"MZ-\d{3}-CCX-PI-ISO-[A-Z0-9-]+",
-                    text,
-                    re.IGNORECASE
-                )
 
-                if m:
-                    ccsjv_dwg = m.group()
-        
-        
-          
-            # ==========================================
-            # Line Number
-            # ==========================================
 
-                m = re.search(
-                     r'\d{3}-(?:\d+(?:/\d+)?(?:\.\d+)?)"{0,2}-[A-Z]{1,3}-\d{4}[A-Z]?-?[A-Z0-9]+-[A-Z0-9]+',
-                    text,
-                    re.IGNORECASE
-                )
+            # -------------------------------
+            # CCSJV DRAWING
+            # -------------------------------
 
-                if m:
-                    line_no = m.group()
-                    
-            # ==========================================
-            # Line Class (from Line Number)
-            # ==========================================
+            m = re.search(
+                r"MZ-\d{3}-CCX-PI-ISO-[A-Z0-9-]+",
+                line,
+                re.I
+            )
 
-                line_class = ""
+            if m:
+                ccsjv_dwg = m.group()
 
-                if line_no:
-                    m = re.search(
-                        r'-([A-Z0-9]+)-[A-Z0-9]+$',
-                        line_no
-                    )
 
-                if m:
-                    line_class = m.group(1)
 
-            # ==========================================
-            # PID Number
-            # ==========================================
+            # -------------------------------
+            # LINE NUMBER
+            # -------------------------------
 
-                m = re.search(
-                    r'(MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}|[A-Z]+\d*-\d{3}-\d{3}/\d{3}|\d{3}-\d{5}(?:-\d+)+)',
-                    text,
-                    re.IGNORECASE
-                )
+            m = re.search(
+                r'\d{3}-(?:\d+(?:/\d+)?(?:\.\d+)?)"?-[A-Z]{1,3}-\d{4}[A-Z]?-?[A-Z0-9]+-[A-Z0-9]+',
+                line,
+                re.I
+            )
 
-                if m:
-                    pid_no = m.group(1)
 
-            # ==========================================
-            # NPS (from Line Number)
-            # ==========================================
+            if m:
+                line_no = m.group()
 
-                nps = ""
 
-                if line_no:
 
-                    m = re.search(
-                        r'^\d{3}-(\d+(?:/\d+)?(?:\.\d+)?)"',
-                        line_no
-                    )
+            # -------------------------------
+            # PID NUMBER
+            # -------------------------------
 
-                    if m:
-                        nps = m.group(1)
-                
-        # ==================================================
-        # Revision
-        # ==================================================
+            m = re.search(
+                r'(MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}|[A-Z]+\d*-\d{3}-\d{3}/\d{3}|\d{3}-\d{5}(?:-\d+)+)',
+                line,
+                re.I
+            )
+
+
+            if m:
+                pid_no = m.group()
+
+
+
+        # =================================================
+        # EXTRACT NPS FROM LINE NUMBER
+        # =================================================
+
+        if line_no:
+
+            m = re.search(
+                r'^\d{3}-(\d+(?:/\d+)?(?:\.\d+)?)',
+                line_no
+            )
+
+
+            if m:
+                nps = m.group(1)
+
+
+
+
+        # =================================================
+        # LINE CLASS
+        # =================================================
+
+        if line_no:
+
+            m = re.search(
+                r'-([A-Z0-9]+)-[A-Z0-9]+$',
+                line_no
+            )
+
+
+            if m:
+                line_class = m.group(1)
+
+
+
+        # =================================================
+        # REVISION
+        # =================================================
+
         m = re.search(
             r"([A-Z0-9])\s+ISSUED FOR CONSTRUCTION",
             text,
-            re.IGNORECASE
+            re.I
         )
 
         if m:
             revision = m.group(1)
 
-        # ==================================================
-        # Process Data Table
-        # ==================================================
 
-        table_pattern = re.search(
-            #r'(\d+(?:\.\d+)?)\s+'                 # NPS
-            #r'([A-Z0-9]+)\s+'                     # Line Class
-            r'([A-Z]+)\s+'                        # Insulation Type
-            r'(\d+(?:\.\d+)?)\s+'                 # Insulation Thickness
-            r'(-?\d+(?:\.\d+)?)\s+'                 # Operating Temp
-            r'(\d+(?:\.\d+)?)\s+'                 # Design Temp
-            r'(\d+(?:\.\d+)?)\s+'                 # Design Pressure
-            r'([A-Za-z\. ]+?)\s+'                 # Test Type
-            r'(\d+(?:\.\d+)?)?\s*'                # Test Pressure (optional)
-            r'([A-Z0-9]+)',                             # Paint System
+
+        # =================================================
+        # EXTRACT ALL TABLE ROWS
+        # =================================================
+
+
+        table_rows = re.findall(
+
+            r'(\d+(?:\.\d+)?)\s+'
+            r'([A-Z0-9]+)\s+'
+            r'([A-Z]+)\s+'
+            r'(\d+(?:\.\d+)?)\s+'
+            r'(-?\d+(?:\.\d+)?)\s+'
+            r'(-?\d+(?:\.\d+)?)\s+'
+            r'(\d+(?:\.\d+)?)\s+'
+            r'([A-Za-z\.]+)\s+'
+            r'(\d+(?:\.\d+)?)\s+'
+            r'([A-Z0-9]+)',
+
             normalized_text,
-            re.IGNORECASE
+
+            re.I
         )
 
-        if table_pattern:
 
-           
 
-            insul_type = table_pattern.group(1)
-            insul_thk = table_pattern.group(2)
-            oper_temp = table_pattern.group(3)
-            des_temp = table_pattern.group(4)
-            des_press = table_pattern.group(5)
+        print("TABLE ROWS:")
+        print(table_rows)
 
-            test_type = table_pattern.group(6).strip()
-            test_press = table_pattern.group(7) or ""
-            pnt_sys = table_pattern.group(8)
 
-        # ==================================================
-        # Save Record
-        # ==================================================
+
+        # =================================================
+        # SELECT ROW MATCHING NPS
+        # =================================================
+
+        for row in table_rows:
+
+
+            row_nps = row[0]
+
+
+            if row_nps == nps:
+
+
+                insul_type = row[2]
+
+                insul_thk = row[3]
+
+                oper_temp = row[4]
+
+                des_temp = row[5]
+
+                des_press = row[6]
+
+                test_type = row[7]
+
+                test_press = row[8]
+
+                pnt_sys = row[9]
+
+
+                break
+
+
+
+
+        # =================================================
+        # SAVE RESULT
+        # =================================================
+
+
         drawing_register.append({
 
+
             "ISO DWG": file,
-            "Sheet No": page_no + 1,
+
+            "Sheet No": page_no+1,
+
             "Drawing No": ccsjv_dwg,
+
             "CCSJV DWG No": drawing_no,
+
             "Line No": line_no,
+
             "PID No": pid_no,
+
             "Revision": revision,
+
             "NPS(IN)": nps,
+
             "LINE CLASS": line_class,
+
             "INSUL TYPE": insul_type,
+
             "INSUL THK": insul_thk,
+
             "OPER.TEMP": oper_temp,
+
             "DES.TEMP": des_temp,
+
             "DES.PRESS": des_press,
+
             "TEST TYPE": test_type,
+
             "TEST PRESS": test_press,
+
             "PNT SYS": pnt_sys
 
         })
 
+
+
     doc.close()
 
-    # ==========================================================
-    # Create DataFrame
-    # ==========================================================
-    drawing_df = pd.DataFrame(drawing_register)
 
-    columns_to_fill = [
-    "Drawing No",
-    "CCSJV DWG No",
-    "Line No",
-    "PID No",
-    "Revision",
-    "NPS(IN)",
-    "LINE CLASS",
-    "INSUL TYPE",
-    "INSUL THK",
-    "OPER.TEMP",
-    "DES.TEMP",
-    "DES.PRESS",
-    "TEST TYPE",
-    "TEST PRESS",
-    "PNT SYS"
-]
 
-    drawing_df[columns_to_fill] = (
-    drawing_df[columns_to_fill]
-    .replace("", pd.NA)
-    .ffill()
-    .fillna("")
-)
+    df = pd.DataFrame(drawing_register)
 
-    return drawing_df
+
+
+    columns = [
+
+        "Drawing No",
+        "CCSJV DWG No",
+        "Line No",
+        "PID No",
+        "Revision",
+        "NPS(IN)",
+        "LINE CLASS",
+        "INSUL TYPE",
+        "INSUL THK",
+        "OPER.TEMP",
+        "DES.TEMP",
+        "DES.PRESS",
+        "TEST TYPE",
+        "TEST PRESS",
+        "PNT SYS"
+
+    ]
+
+
+
+    df[columns] = (
+
+        df[columns]
+        .replace("", pd.NA)
+        .ffill()
+        .fillna("")
+
+    )
+
+
+
+    return df
