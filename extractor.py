@@ -3,22 +3,6 @@ import os
 import re
 import pandas as pd
 
-def normalize_ocr(line):
-    # Fix minus spacing
-    line = re.sub(r'-\s+', '', line)
-
-    # Join digits/letters split by spaces
-    line = re.sub(r'(?<=\w)\s+(?=\w)', '', line)
-
-    # Fix broken decimals
-    line = re.sub(r'(\d)\s*\.\s*(\d)', r'\1.\2', line)
-
-    # Remove extra spaces
-    line = re.sub(r'\s+', ' ', line).strip()
-
-    return line
-
-
 
 def normalize_ocr(line):
 
@@ -70,8 +54,57 @@ def process_pdf(pdf_path, original_name=None):
 
 
     doc = fitz.open(pdf_path)
+    nps_lookup = {}
 
+    # =================================================
+    # FIRST PASS - BUILD NPS LOOKUP FOR ENTIRE PDF
+    # =================================================
 
+    for page_no in range(doc.page_count):
+
+        page = doc.load_page(page_no)
+        text = page.get_text("text")
+
+        normalized_lines = [
+            normalize_ocr(line)
+            for line in text.splitlines()
+        ]
+
+        normalized_text = "\n".join(normalized_lines)
+
+        table_rows = re.findall(
+
+            r'(\d+(?:\.\d+)?)\s+'
+            r'([A-Z0-9]+)\s+'
+            r'([A-Z]+)\s+'
+            r'(\d+(?:\.\d+)?)\s+'
+            r'(-?\d+(?:\.\d+)?)\s+'
+            r'(-?\d+(?:\.\d+)?)\s+'
+            r'(\d+(?:\.\d+)?)\s+'
+            r'([A-Za-z\.]+)\s+'
+            r'(\d+(?:\.\d+)?)\s+'
+            r'([A-Z0-9]+)',
+
+            normalized_text,
+            re.I
+        )
+
+        for row in table_rows:
+
+            if row[0] not in nps_lookup:
+
+                nps_lookup[row[0]] = {
+
+                    "INSUL TYPE": row[2],
+                    "INSUL THK": row[3],
+                    "OPER.TEMP": row[4],
+                    "DES.TEMP": row[5],
+                    "DES.PRESS": row[6],
+                    "TEST TYPE": row[7],
+                    "TEST PRESS": row[8],
+                    "PNT SYS": row[9]
+
+                }
 
     for page_no in range(doc.page_count):
 
@@ -286,36 +319,21 @@ def process_pdf(pdf_path, original_name=None):
 
 
         # =================================================
-        # SELECT ROW MATCHING NPS
+        # GET TABLE DATA FROM ANY PAGE IN PDF
         # =================================================
 
-        for row in table_rows:
+        if nps in nps_lookup:
 
+            info = nps_lookup[nps]
 
-            row_nps = row[0]
-
-
-            if row_nps == nps:
-
-
-                insul_type = row[2]
-
-                insul_thk = row[3]
-
-                oper_temp = row[4]
-
-                des_temp = row[5]
-
-                des_press = row[6]
-
-                test_type = row[7]
-
-                test_press = row[8]
-
-                pnt_sys = row[9]
-
-
-                break
+            insul_type = info["INSUL TYPE"]
+            insul_thk = info["INSUL THK"]
+            oper_temp = info["OPER.TEMP"]
+            des_temp = info["DES.TEMP"]
+            des_press = info["DES.PRESS"]
+            test_type = info["TEST TYPE"]
+            test_press = info["TEST PRESS"]
+            pnt_sys = info["PNT SYS"]
 
 
 
@@ -368,11 +386,7 @@ def process_pdf(pdf_path, original_name=None):
 
     doc.close()
 
-
-
     df = pd.DataFrame(drawing_register)
-
-
 
     columns = [
 
@@ -392,19 +406,8 @@ def process_pdf(pdf_path, original_name=None):
         "TEST PRESS",
         "PNT SYS"
 
-    ]
+        ]
 
-
-
-    df[columns] = (
-
-        df[columns]
-        .replace("", pd.NA)
-        .ffill()
-        .fillna("")
-
-    )
-
-
+    df = df.fillna("")
 
     return df
