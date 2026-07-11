@@ -4,6 +4,42 @@ import re
 import pandas as pd
 
 
+
+def normalize_field(value):
+
+    # Remove spaces between characters/digits
+    value = re.sub(r'\s+', '', value)
+
+    return value.strip()
+
+def normalize_text(value):
+    value = re.sub(r'\s+', ' ', value)
+    return value.strip()
+
+def normalize_nps(value):
+
+    value = str(value).strip()
+
+    # Remove spaces
+    value = re.sub(r'\s+', '', value)
+
+    # Convert common fractions to decimal
+    fraction_map = {
+        "1/2": "0.5",
+        "3/4": "0.75",
+        "11/2": "1.5",
+        "21/2": "2.5"
+    }
+
+    if value in fraction_map:
+        return fraction_map[value]
+
+    # Remove unnecessary decimals
+    value = value.rstrip("0").rstrip(".")
+
+    return value
+
+
 def normalize_ocr(line):
 
     # Fix minus spacing
@@ -81,9 +117,9 @@ def process_pdf(pdf_path, original_name=None):
             r'(-?\d+(?:\.\d+)?)\s+'
             r'(-?\d+(?:\.\d+)?)\s+'
             r'(\d+(?:\.\d+)?)\s+'
-            r'([A-Za-z\.]+)\s+'
-            r'(\d+(?:\.\d+)?)\s+'
-            r'([A-Z0-9]+)',
+            r'([A-Za-z\.]+(?:\s+[A-Za-z\.]+)*)\s*'
+            r'(\d+(?:\.\d+)?)?\s*'
+            r'([A-Za-z0-9/]+)?',
 
             normalized_text,
             re.I
@@ -91,18 +127,20 @@ def process_pdf(pdf_path, original_name=None):
 
         for row in table_rows:
 
-            if row[0] not in nps_lookup:
+            nps_key = normalize_nps(row[0])
 
-                nps_lookup[row[0]] = {
+            if nps_key not in nps_lookup:
 
-                    "INSUL TYPE": row[2],
-                    "INSUL THK": row[3],
-                    "OPER.TEMP": row[4],
-                    "DES.TEMP": row[5],
-                    "DES.PRESS": row[6],
-                    "TEST TYPE": row[7],
-                    "TEST PRESS": row[8],
-                    "PNT SYS": row[9]
+                nps_lookup[nps_key] = {
+
+                    "INSUL TYPE": normalize_field(row[2]),
+                    "INSUL THK": normalize_field(row[3]),
+                    "OPER.TEMP": normalize_field(row[4]),
+                    "DES.TEMP": normalize_field(row[5]),
+                    "DES.PRESS": normalize_field(row[6]),
+                    "TEST TYPE": normalize_text(row[7]),
+                    "TEST PRESS": normalize_field(row[8]) if row[8] else "",
+                    "PNT SYS": normalize_field(row[9])
 
                 }
 
@@ -227,11 +265,13 @@ def process_pdf(pdf_path, original_name=None):
             # -------------------------------
 
             m = re.search(
-                r'(MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}|[A-Z]+\d*-\d{3}-\d{3}/\d{3}|\d{3}-\d{5}(?:-\d+)+)',
+                r'(MZ-\d{3}-CCX-[A-Z]{2}-PID-\d{5}-\d{2}|'
+                r'[A-Z]+\d*-\d{3}-\d{3}/\d{3}|'
+                r'\d{3}-\d{5}(?:-\d+)+|'
+                r'NA)',
                 line,
                 re.I
             )
-
 
             if m:
                 pid_no = m.group()
@@ -302,9 +342,9 @@ def process_pdf(pdf_path, original_name=None):
             r'(-?\d+(?:\.\d+)?)\s+'
             r'(-?\d+(?:\.\d+)?)\s+'
             r'(\d+(?:\.\d+)?)\s+'
-            r'([A-Za-z\.]+)\s+'
-            r'(\d+(?:\.\d+)?)\s+'
-            r'([A-Z0-9]+)',
+            r'([A-Za-z\.]+(?:\s+[A-Za-z\.]+)*)\s*'
+            r'(\d+(?:\.\d+)?)?\s*'
+            r'([A-Za-z0-9/]+)?',
 
             normalized_text,
 
@@ -322,18 +362,32 @@ def process_pdf(pdf_path, original_name=None):
         # GET TABLE DATA FROM ANY PAGE IN PDF
         # =================================================
 
-        if nps in nps_lookup:
+        lookup_nps = normalize_nps(nps)
 
-            info = nps_lookup[nps]
+        if lookup_nps in nps_lookup:
+
+            info = nps_lookup[lookup_nps]
 
             insul_type = info["INSUL TYPE"]
             insul_thk = info["INSUL THK"]
             oper_temp = info["OPER.TEMP"]
             des_temp = info["DES.TEMP"]
             des_press = info["DES.PRESS"]
-            test_type = info["TEST TYPE"]
-            test_press = info["TEST PRESS"]
-            pnt_sys = info["PNT SYS"]
+
+            test_type = normalize_text(info["TEST TYPE"])
+
+
+            # =============================================
+            # TEST PRESS LOGIC
+            # =============================================
+
+            if test_type == "Not Required":
+                test_press = ""
+                pnt_sys = info["PNT SYS"]
+
+            else:
+                test_press = info["TEST PRESS"]
+                pnt_sys = info["PNT SYS"]
 
 
 
@@ -387,27 +441,7 @@ def process_pdf(pdf_path, original_name=None):
     doc.close()
 
     df = pd.DataFrame(drawing_register)
-
-    columns = [
-
-        "Drawing No",
-        "CCSJV DWG No",
-        "Line No",
-        "PID No",
-        "Revision",
-        "NPS(IN)",
-        "LINE CLASS",
-        "INSUL TYPE",
-        "INSUL THK",
-        "OPER.TEMP",
-        "DES.TEMP",
-        "DES.PRESS",
-        "TEST TYPE",
-        "TEST PRESS",
-        "PNT SYS"
-
-        ]
-
+    
     df = df.fillna("")
 
     return df

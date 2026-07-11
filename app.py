@@ -2,355 +2,861 @@ import streamlit as st
 import pandas as pd
 import tempfile
 import os
+import time
 
 from extractor import process_pdf
 
-# ============================================
-# Page Configuration
-# ============================================
+
+# ==========================================================
+# APPLICATION VERSION
+# ==========================================================
+
+APP_VERSION = "1.1.5"
+
+
+# ==========================================================
+# PAGE CONFIGURATION
+# ==========================================================
 
 st.set_page_config(
-    page_title="ISO DWG DETAILS EXTRACTION",
-    page_icon="🌏",
-    layout="wide"
+    page_title="ISO DWG DETAILS EXTRACTOR",
+    page_icon="📄",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-if "show_table" not in st.session_state:
-    st.session_state.show_table = False
 
-st.markdown("""
-<style>
-.header{
-    background:  
-    padding:20px;
-    border-radius:12px;
-    margin-bottom:15px;
-}
-.title{
-    color:#566D7E;
-    font-size:65px;
-    font-weight:bold;
-}
-.subtitle{
-    color:#566D7E;
-    font-size:25px;
-}
-
-.button{
-    color:#657383;
-    font-size:25px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-col1,col2 =st.columns([1,6])
-
-with col1:
-    st.image("23.jpg", width=250)
-
-with col2:
-    st.markdown("""
-    <div class="header">
-        <div class="title">
-            ISO DWG DETAILS EXTRACTOR
-        </div>
-        <div class="subtitle">
-            PDF FILES - Details - Extract
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("---")
-
-# ============================================
-# Sidebar
-# ============================================
-
-st.sidebar.title("**EXTRACTED PDF FILES**")
-st.sidebar.markdown("---")
-#st.sidebar.write("### UPLOADED PDFs")
-
-
-# ============================================
-# Upload PDFs
-# ============================================
+# ==========================================================
+# SESSION STATE
+# ==========================================================
 
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
-st.info(
-    """
-    ℹ️ **Supported PDF Types**
 
-    ✔ Standard exported PDF drawings – Fully supported
+# ==========================================================
+# MODERN CSS
+# ==========================================================
 
-    ⚠ Editable/Vector PDF drawings – Some engineering details may not be extracted completely.
-    """
+st.markdown("""
+
+<style>
+
+.stApp{
+    background:#F4F7FC;
+}
+
+
+/* HEADER */
+
+.header{
+
+    background:linear-gradient(135deg,#0F4C81,#1976D2);
+
+    padding:30px;
+
+    border-radius:20px;
+
+    box-shadow:0px 8px 20px rgba(0,0,0,.15);
+
+    margin-bottom:20px;
+
+}
+
+
+.title{
+
+    color:#e8b346;
+
+    font-size:48px;
+
+    font-weight:700;
+
+}
+
+
+.subtitle{
+
+    color:#EAF4FF;
+
+    font-size:20px;
+
+}
+
+
+
+/* BUTTONS */
+
+div.stButton>button{
+
+    width:100%;
+
+    height:55px;
+
+    border-radius:12px;
+
+    font-size:17px;
+
+    font-weight:bold;
+
+}
+
+
+div.stDownloadButton>button{
+
+    width:100%;
+
+    height:55px;
+
+    border-radius:12px;
+
+    font-size:16px;
+
+    font-weight:bold;
+
+}
+
+
+
+/* METRICS */
+
+div[data-testid="stMetric"]{
+
+    background:white;
+
+    padding:20px;
+
+    border-radius:15px;
+
+    box-shadow:0px 4px 12px rgba(0,0,0,.08);
+
+}
+
+
+
+/* SIDEBAR */
+
+[data-testid="stSidebar"]{
+
+    background:#0B1F36;
+
+}
+
+
+[data-testid="stSidebar"] *{
+
+    color:white;
+
+}
+
+
+
+</style>
+
+""",
+unsafe_allow_html=True
 )
 
-st.subheader("📄 UPLOAD ISO DRAWINGS")
+
+
+# ==========================================================
+# HEADER
+# ==========================================================
+
+
+logo_col, title_col = st.columns([1,6])
+
+
+with logo_col:
+
+    st.image(
+        "23.jpg",
+        width=210
+    )
+
+
+
+with title_col:
+
+    st.markdown(
+    f"""
+
+<div class="header">
+
+<div class="title">
+ISO DWG DETAILS EXTRACTOR
+</div>
+
+
+<div class="subtitle">
+Engineering Drawing Register Extraction System
+</div>
+
+
+<div style="
+margin-top:15px;
+font-size:15px;
+color:#DCEEFF;
+">
+
+📄 Multi PDF Processing |
+⚙️ Automated Data Extraction |
+📊 Drawing Register Generation
+
+</div>
+
+
+</div>
+
+""",
+unsafe_allow_html=True
+)
+
+
+
+st.markdown("---")
+
+
+
+# ==========================================================
+# SIDEBAR
+# ==========================================================
+
+
+st.sidebar.title("📂 PROJECT FILES")
+
+st.sidebar.markdown("---")
+
+
+st.sidebar.info(
+"""
+Upload one or more ISO drawing PDFs.
+
+Supported:
+
+• Standard PDF
+
+• Multi-sheet Drawings
+
+• OCR Processed PDFs
+
+"""
+)
+
+
+
+# ==========================================================
+# INFORMATION CARD
+# ==========================================================
+
+
+st.info(
+"""
+
+### 📄 Supported Drawings
+
+✅ Standard exported PDF drawings
+
+✅ Multi-sheet ISO drawings
+
+✅ OCR processed drawings
+
+⚠ Editable/vector PDFs may require OCR
+
+"""
+)
+
+
+
+# ==========================================================
+# FILE UPLOAD
+# ==========================================================
+
+
+st.subheader(
+"📤 Upload ISO Drawings"
+)
+
 
 uploaded_files = st.file_uploader(
-    "**Select PDF Files**",
+
+    "Choose one or more PDF files",
+
     type="pdf",
+
     accept_multiple_files=True,
-    key=f"pdf_uploader_{st.session_state.uploader_key}"
+
+    key=f"pdf_{st.session_state.uploader_key}"
+
 )
 
+# ==========================================================
+# CHECK TOTAL UPLOAD SIZE
+# ==========================================================
+
+if uploaded_files:
+
+    total_size = sum(pdf.size for pdf in uploaded_files)
+    total_mb = total_size / (1024 * 1024)
+
+    st.info(f"📦 Total upload size: {total_mb:.1f} MB")
+
+    if total_mb > 200:
+
+        st.error("❌ Total uploaded files exceed 200 MB.")
+
+        st.stop()
 
 
-# ============================================
-# Sidebar File List
-# ============================================
+
+# ==========================================================
+# SIDEBAR FILE DISPLAY
+# ==========================================================
 
 
 if uploaded_files:
 
-    st.sidebar.header("**UPLOADED PDFs**")
+
+    st.sidebar.subheader(
+        "📄 Uploaded PDFs"
+    )
+
 
     for pdf in uploaded_files:
-        st.sidebar.write(f"📄 {pdf.name}")
-    st.sidebar.markdown("---")
+
+        st.sidebar.write(
+            f"📄 {pdf.name}"
+        )
 
 
 
-# ============================================
-# Process PDFs
-# ============================================
+# ==========================================================
+# MAIN PROCESS
+# ==========================================================
+
 
 if uploaded_files:
 
-    st.success(f"{len(uploaded_files)} PDF(s) selected.")
 
-    # ============================================
-    # Dashboard Metrics
-    # ============================================
+    st.success(
+        f"✅ {len(uploaded_files)} PDF(s) selected."
+    )
 
-    button1, button2, button3, button4 = st.columns([3,1,1,1])
 
-    with button1:
-        extract = st.button(
-            "📄 Extract DWG Details",
-            use_container_width=True,
-            type="primary"
+    m1,m2,m3,m4 = st.columns(4)
+
+
+    with m1:
+
+        st.metric(
+            "Uploaded PDFs",
+            len(uploaded_files)
         )
 
-    with button2:
-        clear = st.button(
-            "🗑️ CLEAR UP FILES",
+
+    with m2:
+
+        st.metric(
+            "Status",
+            "Ready"
+        )
+
+
+    with m3:
+
+        st.metric(
+            "Version",
+            APP_VERSION
+        )
+
+
+    with m4:
+
+        st.metric(
+            "Engine",
+            "PDF Parser"
+        )
+
+
+
+    st.markdown("")
+
+
+    col1,col2 = st.columns([3,1])
+
+
+    with col1:
+
+        extract = st.button(
+            "***Extract Drawing Register***",
+            type="primary",
             use_container_width=True
         )
 
-    with button3:
-        excel_placeholder = st.empty()
 
-    with button4:
-        csv_placeholder = st.empty()
+    with col2:
+
+        clear = st.button(
+            "🗑 CLEAR",
+            use_container_width=True
+        )
+
+
 
     if clear:
+
         st.session_state.uploader_key += 1
+
         st.rerun()
+
+
 
     if extract:
 
-        dfs = []
 
-        progress = st.progress(0)
-        status = st.empty()
+        start_time=time.time()
 
-        for i, uploaded_file in enumerate(uploaded_files):
 
-            percent = int(((i + 1) / len(uploaded_files)) * 100)
+        dfs=[]
 
-            status.markdown(f"""
-            <div style="
-            #background:#74baeb;
-            padding:30px;
-            border-radius:15px;
-            box-shadow:0px 4px 12px rgba(0,0,0,0.25);
-            text-align:center;
-            color:#111212;
-            margin-bottom:10px;
-            ">
 
-            <div style="font-size:48px;">
-            ⚙️
-            </div>
+        progress=st.progress(0)
 
-            <div style="
-            font-size:28px;
-            font-weight:bold;
-            margin-top:10px;
-            ">
-            Extracting Drawing Register...
-            </div>
+        status=st.empty()
 
-            <div style="
-            font-size:18px;
-            margin-top:15px;
-            color:#111212;
-            ">
-            📄 <b>{uploaded_file.name}</b>
-            </div>
 
-            <div style="
-            font-size:16px;
-            margin-top:10px;
-            ">
-            Processing <b>{i+1}</b> of <b>{len(uploaded_files)}</b> PDF(s)
-            </div>
 
-            <div style="
-            font-size:22px;
-            font-weight:bold;
-            margin-top:10px;
-            color:#111212;
-            ">
-            {percent}% Complete
-            </div>
+        for index,uploaded_file in enumerate(uploaded_files):
 
-            <div style="
-            width:100%;
-            background:#E3F2FD;
-            border-radius:10px;
-            height:18px;
-            margin-top:20px;
-            overflow:hidden;
-            ">
 
-            <div style="
-            width:{percent}%;
-            height:18px;
-            background:#7febc4;
-            transition:width .4s;
-            ">
-            </div>
+            status.info(
+            f"""
+⚙️ Processing:
 
-            </div>
+📄 {uploaded_file.name}
 
-            <div style="
-            margin-top:20px;
-            font-size:15px;
-            color:#111212;
-            ">
-            Please wait while the ISO drawings are being analyzed...
-            </div>
+Progress:
 
-            </div>
-            """, unsafe_allow_html=True)
+{index+1}/{len(uploaded_files)}
+"""
+            )
+
+
 
             uploaded_file.seek(0)
 
-            with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".pdf"
-            ) as tmp:
 
-                tmp.write(uploaded_file.read())
-                tmp_path = tmp.name
 
-            # Process PDF
-            original_name = os.path.splitext(uploaded_file.name)[0]
+            tmp_path=None
 
-            df = process_pdf(       
-                tmp_path,
-                original_name=original_name
+
+            try:
+
+
+                with tempfile.NamedTemporaryFile(
+                    delete=False,
+                    suffix=".pdf"
+                ) as tmp:
+
+
+                    tmp.write(
+                        uploaded_file.read()
+                    )
+
+                    tmp_path=tmp.name
+
+
+
+                original_name=os.path.splitext(
+                    uploaded_file.name
+                )[0]
+
+
+
+                df=process_pdf(
+                    tmp_path,
+                    original_name=original_name
+                )
+
+
+
+                if df is not None and not df.empty:
+
+                    dfs.append(df)
+
+
+
+            except Exception as e:
+
+
+                st.error(
+                    f"❌ {uploaded_file.name}: {e}"
+                )
+
+
+
+            finally:
+
+
+                if tmp_path and os.path.exists(tmp_path):
+
+                    os.remove(tmp_path)
+
+
+
+            progress.progress(
+                (index+1)/len(uploaded_files)
+            )
+            
+        progress.empty()
+
+
+        elapsed = time.time() - start_time
+
+
+
+        if not dfs:
+
+            st.error(
+                "❌ No drawing data was extracted."
             )
 
-            dfs.append(df)
+            st.stop()
 
-            os.remove(tmp_path)
 
-            progress.progress((i + 1) / len(uploaded_files))
 
-        # ==========================================
-        # After ALL PDFs are processed
-        # ==========================================
+        status.success(
+            "✅ Extraction Completed Successfully!"
+        )
+
+
+
+        # ==================================================
+        # COMBINE DATA
+        # ==================================================
+
 
         final_df = pd.concat(
             dfs,
             ignore_index=True
         )
 
-        # Format NPS column
-        if "NPS" in final_df.columns:
-            final_df["NPS"] = (
-            final_df["NPS"]
-            .astype(str)
-            .str.strip()
-            .replace("nan", "")
-            .apply(lambda x: f'{x}"' if x else "")
+
+
+        # ==================================================
+        # FORMAT NPS COLUMN
+        # ==================================================
+
+
+        def format_nps(value):
+
+            if pd.isna(value):
+
+                return ""
+
+
+            value=str(value).strip()
+
+
+            if not value:
+
+                return ""
+
+
+            value=value.replace(
+                '"',
+                ""
             )
 
-        progress.empty()
 
-        status.success("✅ Extraction Completed Successfully!")
-       
-          
-      
-        # ============================================
-        # Preview Table
-        # ============================================
-        excel_name = "Extracted Data.xlsx"
+            if value.endswith(".0"):
+
+                value=value[:-2]
+
+
+            return value + '"'
+
+
+
+
+        if "NPS(IN)" in final_df.columns:
+
+
+            final_df["NPS(IN)"] = (
+
+                final_df["NPS(IN)"]
+
+                .apply(format_nps)
+
+            )
+
+
+
+        # ==================================================
+        # EXPORT FILES
+        # ==================================================
+
+
+        excel_file=None
+
+
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".xlsx"
+        ) as tmp_excel:
+
+
+            excel_file=tmp_excel.name
+
+
 
         final_df.to_excel(
-            excel_name,
+
+            excel_file,
+
             index=False,
+
             engine="openpyxl"
+
         )
-        
-        # Create CSV
-        csv = final_df.to_csv(index=False)
 
-        st.subheader("📋 Extracted Drawing Register")
 
-        with open(excel_name, "rb") as f:
-            excel_placeholder.download_button(
-                "📥 Download Excel",
-                data=f,
-                file_name=excel_name,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
 
-        csv_placeholder.download_button(
-            "📥 Download CSV",
-            data=csv,
-            file_name="CCSJV_Drawing_Register.csv",
-            mime="text/csv",
-            use_container_width=True
-            )
-            
-        with st.expander("👁 Table Preview", expanded=False):
-            st.dataframe(
-            final_df,
-            use_container_width=True,
-            hide_index=True
-            )
+        csv_data = final_df.to_csv(
+            index=False
+        )
 
-        
-        # ============================================
-        # Preview Table
-        # ============================================
 
-        if st.session_state.show_table:
-            st.dataframe(
-                final_df,
-                use_container_width=True,
-                hide_index=True
-            )
 
         st.markdown("---")
 
-        st.caption(
-            """
-            **ISO DWG DETAILS EXTRACTOR v1.1.4**
-            
-            Developed by: Piping Department
 
-            Developed for: Piping Department
-
-            ©️ 2026 All Rights Reserved
-            """
+        st.subheader(
+            "📋 Extracted Drawing Register"
         )
+
+
+
+        download1,download2 = st.columns(2)
+
+
+
+        with download1:
+
+
+            with open(
+                excel_file,
+                "rb"
+            ) as f:
+
+
+                st.download_button(
+
+                    label="📥 Download Excel",
+
+                    data=f,
+
+                    file_name="Extracted_Drawing_Register.xlsx",
+
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+                    use_container_width=True
+
+                )
+
+
+
+
+        with download2:
+
+
+            st.download_button(
+
+                label="📥 Download CSV",
+
+                data=csv_data,
+
+                file_name="CCSJV_Drawing_Register.csv",
+
+                mime="text/csv",
+
+                use_container_width=True
+
+            )
+
+
+
+
+        # ==================================================
+        # DATA PREVIEW
+        # ==================================================
+
+
+        st.markdown("")
+
+
+        with st.expander(
+
+            "👁 Preview Extracted Data",
+
+            expanded=True
+
+        ):
+
+
+            st.dataframe(
+
+                final_df,
+
+                use_container_width=True,
+
+                hide_index=True,
+
+                height=750
+
+            )
+
+
+
+
+        # ==================================================
+        # SUMMARY DASHBOARD
+        # ==================================================
+
+
+        st.markdown("---")
+
+
+        s1,s2,s3,s4 = st.columns(4)
+
+
+
+        with s1:
+
+
+            st.info(
+
+            f"""
+📄 **PDF Files**
+
+{len(uploaded_files)}
+
+"""
+            )
+
+
+
+        with s2:
+
+
+            st.info(
+
+            f"""
+📑 **Records**
+
+{len(final_df)}
+
+"""
+            )
+
+
+
+        with s3:
+
+
+            st.success(
+
+            """
+✅ **Status**
+
+Completed
+
+"""
+            )
+
+
+
+        with s4:
+
+
+            st.info(
+
+            f"""
+⏱ **Time**
+
+{elapsed:.1f}s
+
+"""
+            )
+
+
+
+
+        # remove temporary Excel
+
+        if os.path.exists(excel_file):
+
+            os.remove(excel_file)
+
+
+
+# ==========================================================
+# FOOTER
+# ==========================================================
+
+
+st.markdown("---")
+
+
+st.markdown(
+
+f"""
+
+<div style="
+text-align:center;
+padding:20px;
+">
+
+
+<h4 style="color:#0F4C81;">
+
+🌏 ISO DWG DETAILS EXTRACTOR
+
+</h4>
+
+
+<p style="color:gray;">
+
+Version <b>{APP_VERSION}</b>
+
+</p>
+
+
+<p style="color:gray;">
+
+Developed by: <b>InFiniXity</b>
+
+</p>
+
+<p style="color:gray;">
+
+Developed for: <b>Piping Department</b>
+
+</p>
+
+
+<p style="color:gray;">
+
+© 2026 All Rights Reserved
+
+</p>
+
+
+</div>
+
+
+""",
+
+unsafe_allow_html=True
+
+)            
