@@ -4,6 +4,19 @@ import re
 import pandas as pd
 
 
+def normalize_test_type(value):
+    value = value.upper().strip()
+
+    # Remove spaces between single characters
+    value = re.sub(r'(?<=\b[A-Z])\s+(?=[A-Z]\b)', '', value)
+
+    # Remove all spaces when the word is mostly single letters
+    if re.fullmatch(r'(?:[A-Z]\s+)+[A-Z]', value):
+        value = value.replace(" ", "")
+
+    return value
+
+
 
 def normalize_field(value):
 
@@ -101,18 +114,21 @@ def process_pdf(pdf_path, original_name=None):
         page = doc.load_page(page_no)
         text = page.get_text("text")
 
-        normalized_lines = [
-            normalize_ocr(line)
-            for line in text.splitlines()
-        ]
+       # normalized_lines = [
+           # normalize_ocr(line)
+          #  for line in text.splitlines()
+        #]
 
-        normalized_text = "\n".join(normalized_lines)
+        normalized_text = "\n".join(
+            normalize_pdf_line(normalize_ocr(line))
+            for line in text.splitlines()
+            )
 
         table_rows = re.findall(
 
             r'(\d+(?:\.\d+)?)\s+'
             r'([A-Z0-9]+)\s+'
-            r'([A-Z]+)\s+'
+            r'([A-Z\s]+?)\s+'
             r'(\d+(?:\.\d+)?)\s+'
             r'(-?\d+(?:\.\d+)?)\s+'
             r'(-?\d+(?:\.\d+)?)\s+'
@@ -151,13 +167,16 @@ def process_pdf(pdf_path, original_name=None):
         text = page.get_text("text")
 
 
-        normalized_lines = [
-            normalize_ocr(line)
+        #normalized_lines = [
+          #  normalize_ocr(line)
+          #  for line in text.splitlines()
+        #]
+
+
+        normalized_text = "\n".join(
+            normalize_pdf_line(normalize_ocr(line))
             for line in text.splitlines()
-        ]
-
-
-        normalized_text = "\n".join(normalized_lines)
+            )
 
 
         lines = [
@@ -319,7 +338,7 @@ def process_pdf(pdf_path, original_name=None):
 
         m = re.search(
             r"([A-Z0-9])\s+ISSUED FOR CONSTRUCTION",
-            text,
+            normalized_text,
             re.I
         )
 
@@ -337,7 +356,7 @@ def process_pdf(pdf_path, original_name=None):
 
             r'(\d+(?:\.\d+)?)\s+'
             r'([A-Z0-9]+)\s+'
-            r'([A-Z]+)\s+'
+            r'([A-Z\s]+?)\s+'
             r'(\d+(?:\.\d+)?)\s+'
             r'(-?\d+(?:\.\d+)?)\s+'
             r'(-?\d+(?:\.\d+)?)\s+'
@@ -376,12 +395,11 @@ def process_pdf(pdf_path, original_name=None):
 
             test_type = normalize_text(info["TEST TYPE"])
 
-
             # =============================================
             # TEST PRESS LOGIC
             # =============================================
 
-            if test_type == "Not Required":
+            if normalize_field(test_type).upper() == "NOTREQUIRED":
                 test_press = ""
                 pnt_sys = info["PNT SYS"]
 
