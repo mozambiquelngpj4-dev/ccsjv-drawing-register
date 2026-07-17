@@ -53,8 +53,21 @@ if "elapsed" not in st.session_state:
 if "pdf_count" not in st.session_state:
     st.session_state.pdf_count = 0
     
+   
+    
 if "missing_df" not in st.session_state:
     st.session_state.missing_df = None
+    
+if "current_records" not in st.session_state:
+    st.session_state.current_records = 0
+
+
+if "current_missing" not in st.session_state:
+    st.session_state.current_missing = 0
+
+
+if "processing_file" not in st.session_state:
+    st.session_state.processing_file = ""
 
 
 
@@ -550,7 +563,7 @@ tab1, tab2, tab3 = st.tabs(
 [
 "📤 Upload Drawings",
 "📋 Extracted Table",
-"⚠ Missing Data"
+"⚠️ Missing Data"
 ]
 )
 
@@ -652,10 +665,12 @@ with tab1:
             # Clear counters
             st.session_state.elapsed = 0
             st.session_state.pdf_count = 0
-
+            
+            toast(
+                "All data has been cleared.",
+                "info"
+            )
             st.rerun()
-
-
 
         # ======================================================
         # EXTRACTION PROCESS
@@ -674,6 +689,10 @@ with tab1:
 
 
             status = st.empty()
+            
+            st.session_state.current_records = 0
+
+            st.session_state.current_missing = 0
 
 
 
@@ -683,7 +702,8 @@ with tab1:
 
             for index, uploaded_file in enumerate(uploaded_files):
 
-
+                st.session_state.processing_file = uploaded_file.name
+                    
                 status.markdown(
                 f"""
 
@@ -739,6 +759,23 @@ style="width:{((index+1)/len(uploaded_files))*100}%">
 
 
 <div class="processing-footer">
+
+📑 Records Extracted:
+<b>{st.session_state.current_records}</b>
+
+<br>
+
+⚠ Missing Data:
+<b>{st.session_state.current_missing}</b>
+
+
+<br>
+
+⏱ Processing Time:
+<b>{time.time()-start_time:.1f}s</b>
+
+
+<br><br>
 
 Please wait while engineering data is being extracted...
 
@@ -801,6 +838,8 @@ Please wait while engineering data is being extracted...
 
 
                     if df is not None and not df.empty:
+
+                        st.session_state.current_records += len(df)
 
                         dfs.append(df)
 
@@ -999,6 +1038,7 @@ Please wait while engineering data is being extracted...
                     )
 
                 st.session_state.missing_df = missing_df
+                st.session_state.current_missing = len(missing_df)
 
 
 
@@ -1285,7 +1325,7 @@ with tab3:
 
 
     st.subheader(
-        "⚠ Missing INSUL TYPE ---> PNT SYS Information"
+        "⚠️ Missing INSUL TYPE ---> PNT SYS Information"
     )
 
 
