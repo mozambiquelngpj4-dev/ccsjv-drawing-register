@@ -30,27 +30,32 @@ def normalize_text(value):
     return value.strip()
 
 def normalize_nps(value):
-
     value = str(value).strip()
 
-    # Remove spaces
+    # Remove all spaces
     value = re.sub(r'\s+', '', value)
 
-    # Convert common fractions to decimal
+    # Common fractions
     fraction_map = {
-        "1/2": "0.5",
-        "3/4": "0.75",
-        "11/2": "1.5",
-        "21/2": "2.5"
+        '1/2': '0.5',
+        '3/4': '0.75',
+        '11/2': '1.5',
+        '21/2': '2.5',
+        '31/2': '3.5',
+        '41/2': '4.5'
     }
 
     if value in fraction_map:
-        return fraction_map[value]
+        value = fraction_map[value]
 
-    # Remove unnecessary decimals
-    value = value.rstrip("0").rstrip(".")
-
-    return value
+    # Convert numeric strings cleanly
+    try:
+        num = float(value)
+        if num.is_integer():
+            return str(int(num))
+        return str(num)
+    except ValueError:
+        return value
 
 
 def normalize_ocr(line):
@@ -393,21 +398,14 @@ def process_pdf(pdf_path, original_name=None):
             des_temp = info["DES.TEMP"]
             des_press = info["DES.PRESS"]
 
-            test_type = normalize_text(info["TEST TYPE"])
+            test_type = normalize_test_type(info["TEST TYPE"])
 
-            # =============================================
-            # TEST PRESS LOGIC
-            # =============================================
-
-            if normalize_field(test_type).upper() == "NOTREQUIRED":
+            if test_type == "NOTREQUIRED":
                 test_press = ""
-                pnt_sys = info["PNT SYS"]
-
             else:
                 test_press = info["TEST PRESS"]
+
                 pnt_sys = info["PNT SYS"]
-
-
 
 
         # =================================================
@@ -463,3 +461,4 @@ def process_pdf(pdf_path, original_name=None):
     df = df.fillna("")
 
     return df
+

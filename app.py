@@ -34,6 +34,30 @@ if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
 
+if "final_df" not in st.session_state:
+    st.session_state.final_df = None
+
+
+if "excel_bytes" not in st.session_state:
+    st.session_state.excel_bytes = b""
+
+
+if "csv_data" not in st.session_state:
+    st.session_state.csv_data = ""
+
+
+if "elapsed" not in st.session_state:
+    st.session_state.elapsed = 0
+
+
+if "pdf_count" not in st.session_state:
+    st.session_state.pdf_count = 0
+    
+if "missing_df" not in st.session_state:
+    st.session_state.missing_df = None
+
+
+
 # ==========================================================
 # MODERN CSS
 # ==========================================================
@@ -117,9 +141,8 @@ div.stDownloadButton>button{
 }
 
 
-/* ==========================================================
-   MODERN FLOATING PROCESS WINDOW
-========================================================== */
+
+/* PROCESS WINDOW */
 
 
 .processing-overlay{
@@ -144,146 +167,74 @@ div.stDownloadButton>button{
 
 .processing-box{
 
-
     position:fixed;
-
 
     top:50%;
     left:50%;
 
-
     transform:translate(-50%,-50%);
-
 
     width:460px;
 
-
     padding:35px;
 
-
     background:
-
     linear-gradient(
         145deg,
         rgba(255,255,255,.95),
         rgba(240,247,255,.95)
     );
 
-
     border-radius:24px;
 
-
     box-shadow:
-
     0 25px 60px rgba(0,0,0,.25);
-
 
     z-index:9999;
 
-
     text-align:center;
 
-
-    border:1px solid rgba(255,255,255,.6);
-
-
 }
-
-
-
-/* animated top line */
-
-.processing-box:before{
-
-
-    content:"";
-
-
-    position:absolute;
-
-
-    top:0;
-    left:20%;
-
-
-    width:60%;
-    height:5px;
-
-
-    background:
-
-    linear-gradient(
-        90deg,
-        #0F4C81,
-        #1976D2,
-        #42A5F5
-    );
-
-
-    border-radius:0 0 10px 10px;
-
-
-}
-
 
 
 
 .processing-title{
 
-
     margin-top:15px;
-
 
     font-size:30px;
 
-
     font-weight:800;
-
 
     color:#0F4C81;
 
-
 }
-
 
 
 
 .processing-subtitle{
 
-
     margin-top:8px;
-
 
     font-size:15px;
 
-
     color:#64748B;
-
 
 }
 
 
 
-
-/* modern spinner */
-
-
 .spinner{
-
 
     width:65px;
 
     height:65px;
 
-
     margin:25px auto;
-
 
     border-radius:50%;
 
-
     background:
-
     conic-gradient(
         #1976D2,
         #42A5F5,
@@ -291,39 +242,7 @@ div.stDownloadButton>button{
         #1976D2
     );
 
-
     animation:rotate 1.2s linear infinite;
-
-
-    position:relative;
-
-
-}
-
-
-
-.spinner:after{
-
-
-    content:"";
-
-
-    position:absolute;
-
-
-    top:9px;
-    left:9px;
-
-
-    width:47px;
-    height:47px;
-
-
-    background:white;
-
-
-    border-radius:50%;
-
 
 }
 
@@ -331,128 +250,81 @@ div.stDownloadButton>button{
 
 @keyframes rotate{
 
-
-    from{
-
-        transform:rotate(0deg);
-
-    }
-
-
-    to{
-
-        transform:rotate(360deg);
-
-    }
-
+from{
+    transform:rotate(0deg);
 }
 
+to{
+    transform:rotate(360deg);
+}
 
+}
 
 
 
 .file-card{
 
-
     margin-top:20px;
-
 
     padding:15px;
 
-
     border-radius:15px;
-
 
     background:#EAF4FF;
 
-
     color:#0F4C81;
-
-
-    font-size:15px;
-
 
     font-weight:600;
 
-
 }
-
-
-
 
 
 .progress-container{
 
-
     margin-top:20px;
-
 
     height:12px;
 
-
-    width:100%;
-
-
     background:#D9E8F8;
-
 
     border-radius:20px;
 
-
     overflow:hidden;
 
-
 }
-
-
 
 
 
 .progress-bar{
 
-
     height:100%;
 
-
     background:
-
     linear-gradient(
         90deg,
         #0F4C81,
         #42A5F5
     );
 
-
-    border-radius:20px;
-
-
-    transition:.4s;
-
-
 }
-
 
 
 
 .processing-footer{
 
-
     margin-top:20px;
-
 
     font-size:13px;
 
-
     color:#64748B;
 
-
 }
+
 
 </style>
 
 """,
-unsafe_allow_html=True
-)
+unsafe_allow_html=True)
 
 
 
@@ -476,7 +348,7 @@ with logo_col:
 with title_col:
 
     st.markdown(
-    f"""
+    """
 
 <div class="header">
 
@@ -497,7 +369,8 @@ color:#DCEEFF;
 ">
 
 📄 Multi PDF Processing |
-⚙️ Automated Data Extraction 
+⚙️ Automated Data Extraction
+
 </div>
 
 
@@ -514,120 +387,150 @@ st.markdown("---")
 
 
 # ==========================================================
-# SIDEBAR
+# TABS
 # ==========================================================
 
 
-
-
-# ==========================================================
-# INFORMATION CARD
-# ==========================================================
-
-
-st.info(
-"""
-
-### 📄 Supported Drawings
-
-✅ Standard exported PDF drawings ⚠ ***Editable/vector PDFs may require OCR***
-
-"""
+tab1, tab2, tab3 = st.tabs(
+[
+"📤 Upload Drawings",
+"📋 Extracted Table",
+"⚠ Missing Data"
+]
 )
 
 
 
 # ==========================================================
-# FILE UPLOAD
+# TAB 1 - UPLOAD
 # ==========================================================
 
 
-st.subheader(
-"📤 Upload ISO Drawings"
-)
+with tab1:
 
 
-uploaded_files = st.file_uploader(
+    st.info(
+    """
 
-    "Choose one or more PDF files",
+    ### 📄 Supported Drawings
 
-    type="pdf",
+    ✅ Standard exported PDF drawings
 
-    accept_multiple_files=True,
+    ⚠ Editable/vector PDFs may require OCR
 
-    key=f"pdf_{st.session_state.uploader_key}"
-
-)
-
-# ==========================================================
-# SIDEBAR FILE DISPLAY
-# ==========================================================
-
-
-# ==========================================================
-# MAIN PROCESS
-# ==========================================================
-
-
-if uploaded_files:
-
-
-    st.success(
-        f"✅ {len(uploaded_files)} PDF(s) selected."
+    """
     )
 
-    st.markdown("")
+
+    st.subheader(
+        "📤 Upload ISO Drawings"
+    )
 
 
-    col1,col2 = st.columns([3,1])
+    uploaded_files = st.file_uploader(
+
+        "Choose one or more PDF files",
+
+        type="pdf",
+
+        accept_multiple_files=True,
+
+        key=f"pdf_{st.session_state.uploader_key}"
+
+    )
+    
+    # ==========================================================
+    # MAIN PROCESS
+    # ==========================================================
 
 
-    with col1:
+    if uploaded_files:
 
-        extract = st.button(
-            "***Extract Drawing Register***",
-            type="primary",
-            use_container_width=True
+
+        st.success(
+            f"✅ {len(uploaded_files)} PDF(s) selected."
         )
 
 
-    with col2:
-
-        clear = st.button(
-            "🗑 CLEAR",
-            use_container_width=True
-        )
+        st.markdown("")
 
 
-
-    if clear:
-
-        st.session_state.uploader_key += 1
-
-        st.rerun()
+        col1, col2 = st.columns([3,1])
 
 
+        with col1:
 
-    if extract:
+            extract = st.button(
+                "⚙️ Extract Drawing Register",
+                type="primary",
+                use_container_width=True
+            )
 
 
-        start_time=time.time()
+        with col2:
 
-
-        dfs=[]
-
-
-        progress=st.progress(0)
-
-        status=st.empty()
+            clear = st.button(
+                "🗑 CLEAR",
+                use_container_width=True
+            )
 
 
 
-        for index,uploaded_file in enumerate(uploaded_files):
+        # ======================================================
+        # CLEAR BUTTON
+        # ======================================================
+
+        if clear:
+
+            st.session_state.uploader_key += 1
+
+            # Clear extracted table
+            st.session_state.final_df = None
+
+            # Clear downloads
+            st.session_state.excel_bytes = None
+            st.session_state.csv_data = None
+
+            # Clear missing data report
+            st.session_state.missing_df = None
+
+            # Clear counters
+            st.session_state.elapsed = 0
+            st.session_state.pdf_count = 0
+
+            st.rerun()
 
 
-            status.markdown(
-f"""
+
+        # ======================================================
+        # EXTRACTION PROCESS
+        # ======================================================
+
+        if extract:
+
+
+            start_time = time.time()
+
+
+            dfs = []
+
+
+            progress = st.progress(0)
+
+
+            status = st.empty()
+
+
+
+            # -----------------------------------------------
+            # PROCESS EACH PDF
+            # -----------------------------------------------
+
+            for index, uploaded_file in enumerate(uploaded_files):
+
+
+                status.markdown(
+                f"""
 
 <div class="processing-overlay"></div>
 
@@ -660,7 +563,8 @@ ISO DWG DETAILS EXTRACTION SYSTEM
 
 <br>
 
-Sheet Processing:
+Processing File:
+
 <b>{index+1}/{len(uploaded_files)}</b>
 
 </div>
@@ -688,224 +592,381 @@ Please wait while engineering data is being extracted...
 
 </div>
 
-""",
-unsafe_allow_html=True
-)
 
-
-
-            uploaded_file.seek(0)
-
-
-
-            tmp_path=None
-
-
-            try:
-
-
-                with tempfile.NamedTemporaryFile(
-                    delete=False,
-                    suffix=".pdf"
-                ) as tmp:
-
-
-                    tmp.write(
-                        uploaded_file.read()
-                    )
-
-                    tmp_path=tmp.name
-
-
-
-                original_name=os.path.splitext(
-                    uploaded_file.name
-                )[0]
-
-
-
-                df=process_pdf(
-                    tmp_path,
-                    original_name=original_name
+                """,
+                unsafe_allow_html=True
                 )
 
 
 
-                if df is not None and not df.empty:
+                uploaded_file.seek(0)
 
-                    dfs.append(df)
+
+                tmp_path = None
+
+
+
+                try:
+
+
+                    with tempfile.NamedTemporaryFile(
+
+                        delete=False,
+
+                        suffix=".pdf"
+
+                    ) as tmp:
+
+
+                        tmp.write(
+                            uploaded_file.read()
+                        )
+
+
+                        tmp_path = tmp.name
+
+
+
+                    original_name = os.path.splitext(
+
+                        uploaded_file.name
+
+                    )[0]
+
+
+
+                    df = process_pdf(
+
+                        tmp_path,
+
+                        original_name=original_name
+
+                    )
+
+
+
+                    if df is not None and not df.empty:
+
+                        dfs.append(df)
+
+
+
+                except Exception as e:
+
+
+                    st.error(
+                        f"❌ {uploaded_file.name}: {e}"
+                    )
+
+
+
+                finally:
+
+
+                    if tmp_path and os.path.exists(tmp_path):
+
+                        os.remove(tmp_path)
+
+
+
+                progress.progress(
+
+                    (index + 1) / len(uploaded_files)
+
+                )
+
+
+
+            progress.empty()
+
+
+
+            elapsed = time.time() - start_time
+
+
+
+            # -----------------------------------------------
+            # CHECK RESULT
+            # -----------------------------------------------
+
+
+            if not dfs:
+
+
+                st.error(
+                    "❌ No drawing data was extracted."
+                )
+
+                st.stop()
+
+
+
+            status.success(
+                "✅ Extraction Completed Successfully!"
+            )
+
+
+
+            # ==================================================
+            # COMBINE RESULTS
+            # ==================================================
+
+
+            final_df = pd.concat(
+
+                dfs,
+
+                ignore_index=True
+
+            )
+
+
+
+            # ==================================================
+            # FORMAT NPS COLUMN
+            # ==================================================
+
+
+            def format_nps(value):
+
+
+                if pd.isna(value):
+
+                    return ""
+
+
+                value = str(value).strip()
+
+
+
+                if not value:
+
+                    return ""
+
+
+
+                value = value.replace(
+
+                    '"',
+
+                    ""
+
+                )
+
+
+
+                if value.endswith(".0"):
+
+                    value = value[:-2]
+
+
+
+                return value + '"'
+
+
+
+
+            if "NPS(IN)" in final_df.columns:
+
+
+                final_df["NPS(IN)"] = (
+
+                    final_df["NPS(IN)"]
+
+                    .apply(format_nps)
+
+                )
+
+
+            st.session_state.final_df = final_df
+            
+            # ==================================================
+            # FIND MISSING INSUL. TYPE TO PNT SYS DATA
+            # ==================================================
+
+            try:
+
+                columns = list(final_df.columns)
+
+
+                start_col = columns.index("INSUL TYPE")
+
+                end_col = columns.index("PNT SYS")
+
+
+                check_columns = columns[
+                start_col:end_col + 1
+                ]
+
+
+                temp_check = final_df[check_columns].copy()
+
+
+                # Remove spaces
+
+                temp_check = temp_check.apply(
+                    lambda col: col.astype(str).str.strip()
+                )
+
+
+                # Treat these as blank
+
+                temp_check = temp_check.replace(
+                    [
+                        "",
+                        " ",
+                        "-",
+                        "NA",
+                        "N/A",
+                        "nan",
+                        "None"
+                    ],
+                    pd.NA
+                )
+
+
+                # Rows where ALL INSUL TYPE -> PNT SYS are empty
+
+                missing_mask = temp_check.isna().all(axis=1)
+
+
+                missing_df = final_df[
+                    missing_mask
+                ].copy()
+
+
+                st.session_state.missing_df = missing_df
 
 
 
             except Exception as e:
 
-
-                st.error(
-                    f"❌ {uploaded_file.name}: {e}"
-                )
+                st.session_state.missing_df = pd.DataFrame()
 
 
+            st.session_state.elapsed = elapsed
 
-            finally:
 
-
-                if tmp_path and os.path.exists(tmp_path):
-
-                    os.remove(tmp_path)
+            st.session_state.pdf_count = len(uploaded_files)
 
 
 
-            progress.progress(
-                (index+1)/len(uploaded_files)
+            # ==================================================
+            # CREATE EXCEL
+            # ==================================================
+
+
+            excel_buffer = tempfile.NamedTemporaryFile(
+
+                delete=False,
+
+                suffix=".xlsx"
+
+            )
+
+
+            excel_path = excel_buffer.name
+
+
+            excel_buffer.close()
+
+
+
+            final_df.to_excel(
+
+                excel_path,
+
+                index=False,
+
+                engine="openpyxl"
+
+            )
+
+
+
+            with open(
+
+                excel_path,
+
+                "rb"
+
+            ) as f:
+
+
+                st.session_state.excel_bytes = f.read()
+
+
+
+            os.remove(excel_path)
+
+
+
+            # ==================================================
+            # CREATE CSV
+            # ==================================================
+
+
+            st.session_state.csv_data = final_df.to_csv(
+
+                index=False
+
+            )
+
+
+
+            st.success(
+                "📋 Results are ready in the Extracted Table tab."
             )
             
-        progress.empty()
+            
+# ==========================================================
+# TAB 2 - EXTRACTED TABLE
+# ==========================================================
 
 
-        elapsed = time.time() - start_time
+with tab2:
 
 
-
-        if not dfs:
-
-            st.error(
-                "❌ No drawing data was extracted."
-            )
-
-            st.stop()
+    if st.session_state.final_df is None:
 
 
-
-        status.success(
-            "✅ Extraction Completed Successfully!"
+        st.info(
+            "👈 Upload PDF drawings and run extraction first."
         )
 
 
-
-        # ==================================================
-        # COMBINE DATA
-        # ==================================================
+    else:
 
 
-        final_df = pd.concat(
-            dfs,
-            ignore_index=True
-        )
+        final_df = st.session_state.final_df
 
-
-
-        # ==================================================
-        # FORMAT NPS COLUMN
-        # ==================================================
-
-
-        def format_nps(value):
-
-            if pd.isna(value):
-
-                return ""
-
-
-            value=str(value).strip()
-
-
-            if not value:
-
-                return ""
-
-
-            value=value.replace(
-                '"',
-                ""
-            )
-
-
-            if value.endswith(".0"):
-
-                value=value[:-2]
-
-
-            return value + '"'
-
-
-
-
-        if "NPS(IN)" in final_df.columns:
-
-
-            final_df["NPS(IN)"] = (
-
-                final_df["NPS(IN)"]
-
-                .apply(format_nps)
-
-            )
-
-
-
-        # ==================================================
-        # EXPORT FILES
-        # ==================================================
-
-
-        excel_file=None
-
-
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".xlsx"
-        ) as tmp_excel:
-
-
-            excel_file=tmp_excel.name
-
-
-
-        final_df.to_excel(
-
-            excel_file,
-
-            index=False,
-
-            engine="openpyxl"
-
-        )
-
-
-
-        csv_data = final_df.to_csv(
-            index=False
-        )
-
-
-
-        st.markdown("---")
 
 
         st.subheader(
-            "📋 Extracted Drawing Register"
+            "📋 Extracted Drawing Details"
         )
 
 
 
-        download1,download2 = st.columns(2)
+        # ==================================================
+        # DOWNLOAD BUTTONS
+        # ==================================================
+
+
+        download1, download2 = st.columns(2)
 
 
 
         with download1:
 
 
-            with open(
-                excel_file,
-                "rb"
-            ) as f:
-
+            if st.session_state.excel_bytes is not None:
 
                 st.download_button(
 
                     label="📥 Download Excel",
 
-                    data=f,
+                    data=st.session_state.excel_bytes,
 
                     file_name="Extracted_Drawing_Register.xlsx",
 
@@ -917,33 +978,35 @@ unsafe_allow_html=True
 
 
 
-
         with download2:
 
 
-            st.download_button(
+            if st.session_state.csv_data is not None:
 
-                label="📥 Download CSV",
+                st.download_button(
 
-                data=csv_data,
+                    label="📥 Download CSV",
 
-                file_name="CCSJV_Drawing_Register.csv",
+                    data=st.session_state.csv_data,
 
-                mime="text/csv",
+                    file_name="CCSJV_Drawing_Register.csv",
 
-                use_container_width=True
+                    mime="text/csv",
 
-            )
+                    use_container_width=True
 
+                )
+
+
+
+
+        st.markdown("---")
 
 
 
         # ==================================================
         # DATA PREVIEW
         # ==================================================
-
-
-        st.markdown("")
 
 
         with st.expander(
@@ -969,7 +1032,6 @@ unsafe_allow_html=True
 
 
 
-
         # ==================================================
         # SUMMARY DASHBOARD
         # ==================================================
@@ -978,7 +1040,8 @@ unsafe_allow_html=True
         st.markdown("---")
 
 
-        s1,s2,s3,s4 = st.columns(4)
+
+        s1, s2, s3, s4 = st.columns(4)
 
 
 
@@ -988,11 +1051,13 @@ unsafe_allow_html=True
             st.info(
 
             f"""
+
 📄 **PDF Files**
 
-{len(uploaded_files)}
+{st.session_state.pdf_count}
 
 """
+
             )
 
 
@@ -1003,11 +1068,13 @@ unsafe_allow_html=True
             st.info(
 
             f"""
+
 📑 **Records**
 
 {len(final_df)}
 
 """
+
             )
 
 
@@ -1018,11 +1085,13 @@ unsafe_allow_html=True
             st.success(
 
             """
+
 ✅ **Status**
 
 Completed
 
 """
+
             )
 
 
@@ -1033,21 +1102,67 @@ Completed
             st.info(
 
             f"""
+
 ⏱ **Time**
 
-{elapsed:.1f}s
+{st.session_state.elapsed:.1f}s
 
 """
+
             )
 
 
+# ==========================================================
+# TAB 3 - MISSING DATA
+# ==========================================================
 
 
-        # remove temporary Excel
+with tab3:
 
-        if os.path.exists(excel_file):
 
-            os.remove(excel_file)
+    st.subheader(
+        "⚠ Missing INSUL TYPE ---> PNT SYS Information"
+    )
+
+
+    if st.session_state.missing_df is None:
+
+
+        st.info(
+            "No extraction performed yet."
+        )
+
+
+    elif st.session_state.missing_df.empty:
+
+
+        st.success(
+            "✅ No missing Insul Type to PNT SYS data found."
+        )
+
+
+    else:
+
+
+        st.warning(
+            f"""
+Found {len(st.session_state.missing_df)} drawings
+with missing information.
+"""
+        )
+
+
+        st.dataframe(
+
+            st.session_state.missing_df,
+
+            use_container_width=True,
+
+            hide_index=True,
+
+            height=600
+
+        )
 
 
 
@@ -1060,19 +1175,32 @@ st.markdown("---")
 
 
 st.markdown(
-f"""
+
+"""
+
 <div style="
 text-align:center;
 padding:10px;
 ">
+
 <p style="color:gray;">
+
 Developed by: <b>Piping Department</b>
+
 </p>
+
+
 <p style="color:gray;">
+
 © 2026 All Rights Reserved
+
 </p>
+
+
 </div>
+
 """,
+
 unsafe_allow_html=True
 
-)            
+)   
