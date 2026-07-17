@@ -320,12 +320,167 @@ to{
 
 }
 
+/* ==========================================================
+   FLOATING TOAST NOTIFICATIONS
+========================================================== */
+
+
+.toast{
+
+    position:fixed;
+
+    top:90px;
+
+    right:30px;
+
+    padding:18px 30px;
+
+    border-radius:15px;
+
+    color:white;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    box-shadow:
+    0 10px 30px rgba(0,0,0,.25);
+
+    z-index:99999;
+
+    animation:
+    slideIn .5s,
+    fadeOut .5s 3s forwards;
+
+}
+
+
+
+/* SUCCESS */
+
+.toast-success{
+
+    background:#16a34a;
+
+}
+
+
+
+/* ERROR */
+
+.toast-error{
+
+    background:#dc2626;
+
+}
+
+
+
+/* WARNING */
+
+.toast-warning{
+
+    background:#d97706;
+
+}
+
+
+
+/* INFO */
+
+.toast-info{
+
+    background:#2563eb;
+
+}
+
+
+
+@keyframes slideIn{
+
+
+    from{
+
+        opacity:0;
+
+        transform:translateX(120px);
+
+    }
+
+
+    to{
+
+        opacity:1;
+
+        transform:translateX(0);
+
+    }
+
+}
+
+
+
+@keyframes fadeOut{
+
+
+    from{
+
+        opacity:1;
+
+    }
+
+
+    to{
+
+        opacity:0;
+
+        visibility:hidden;
+
+    }
+
+}
+
 
 </style>
 
 """,
 unsafe_allow_html=True)
 
+
+# ==========================================================
+# TOAST MESSAGE FUNCTION
+# ==========================================================
+
+def toast(message, type="success"):
+
+    icons = {
+
+        "success":"✅",
+
+        "error":"❌",
+
+        "warning":"⚠️",
+
+        "info":"ℹ️"
+
+    }
+
+
+    st.markdown(
+
+    f"""
+
+<div class="toast toast-{type}">
+
+{icons.get(type,"")} {message}
+
+</div>
+
+""",
+
+    unsafe_allow_html=True
+
+    )
 
 
 # ==========================================================
@@ -654,8 +809,9 @@ Please wait while engineering data is being extracted...
                 except Exception as e:
 
 
-                    st.error(
-                        f"❌ {uploaded_file.name}: {e}"
+                    toast(
+                    f"{uploaded_file.name}: {e}",
+                    "error"
                     )
 
 
@@ -693,8 +849,9 @@ Please wait while engineering data is being extracted...
             if not dfs:
 
 
-                st.error(
-                    "❌ No drawing data was extracted."
+                toast(
+                    "No drawing data was extracted.",
+                    "error"
                 )
 
                 st.stop()
@@ -834,6 +991,12 @@ Please wait while engineering data is being extracted...
                     missing_mask
                 ].copy()
 
+                if not missing_df.empty:
+
+                    toast(
+                        f"{len(missing_df)} drawings have missing INSUL. TYPE to PNT SYS data.",
+                        "warning"
+                    )
 
                 st.session_state.missing_df = missing_df
 
@@ -914,8 +1077,9 @@ Please wait while engineering data is being extracted...
 
 
 
-            st.success(
-                "📋 Results are ready in the Extracted Table tab."
+            toast(
+                "Results are ready in the Extracted Table tab.",
+                "success"
             )
             
             
@@ -943,7 +1107,7 @@ with tab2:
 
 
         st.subheader(
-            "📋 Extracted Drawing Details"
+            "📋 Extracted Drawing "
         )
 
 
